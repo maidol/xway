@@ -1,0 +1,8 @@
+version: '2.1'
+
+services:
+  cw-gateway:
+    image: cw-gateway
+    build: .
+    ports:
+      - 8799:8799

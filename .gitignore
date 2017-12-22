@@ -1,0 +1,6 @@
+*.test
+flymake_*
+*.swp
+*.go~
+*.exe
+tmp
