@@ -7,7 +7,7 @@ import (
 
 	"github.com/urfave/negroni"
 
-	cwerror "cw-gateway/error"
+	xerror "xway/error"
 )
 
 // Router ...
@@ -18,7 +18,7 @@ func (rt *Router) ServeHTTP(rw http.ResponseWriter, r *http.Request, next http.H
 	// 处理路由匹配
 	fmt.Printf("%v\n", r.URL)
 	if !rt.IsValid(r.URL.Path) {
-		e := cwerror.NewRequestError(cwerror.Normal, cwerror.EcodeRouteNotFound, "")
+		e := xerror.NewRequestError(xerror.Normal, xerror.EcodeRouteNotFound, "")
 		e.Write(rw)
 		return
 	}

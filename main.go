@@ -8,8 +8,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/negroni"
 
-	"cw-gateway/proxy"
-	"cw-gateway/router"
+	"xway/proxy"
+	"xway/router"
 )
 
 type resp struct {
