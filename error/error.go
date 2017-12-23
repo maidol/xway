@@ -12,7 +12,7 @@ var returnCode = map[int]int{
 
 var errors = map[int]string{
 	EcodeSuccessed:     "Success",
-	EcodeRouteNotFound: "未匹配代理路由",
+	EcodeRouteNotFound: "未能成功匹配代理路由",
 }
 
 var errorStatus = map[int]int{
@@ -21,7 +21,7 @@ var errorStatus = map[int]int{
 	EcodeNotFile:       http.StatusForbidden,
 	EcodeDirNotEmpty:   http.StatusForbidden,
 	EcodeUnauthorized:  http.StatusUnauthorized,
-	EcodeTeestFailed:   http.StatusPreconditionFailed,
+	EcodeTestFailed:    http.StatusPreconditionFailed,
 	EcodeProxyFailed:   http.StatusBadGateway,
 	EcodeInternal:      http.StatusInternalServerError,
 }
@@ -41,7 +41,7 @@ const (
 	EcodeNotFile       = 101
 	EcodeDirNotEmpty   = 102
 	EcodeUnauthorized  = 103
-	EcodeTeestFailed   = 104
+	EcodeTestFailed    = 104
 	EcodeProxyFailed   = 105
 	EcodeInternal      = 106
 )

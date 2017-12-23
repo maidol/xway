@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/mailgun/log"
 	"github.com/mailgun/timetools"
+	log "github.com/sirupsen/logrus"
 )
 
 // ratioController allows passing portions traffic back to the endpoints,

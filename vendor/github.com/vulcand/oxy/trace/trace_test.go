@@ -11,8 +11,8 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/mailgun/oxy/testutils"
-	"github.com/mailgun/oxy/utils"
+	"github.com/vulcand/oxy/testutils"
+	"github.com/vulcand/oxy/utils"
 
 	. "gopkg.in/check.v1"
 )
@@ -28,12 +28,9 @@ func (s *TraceSuite) TestTraceSimple(c *C) {
 		w.Header().Set("Content-Length", "5")
 		w.Write([]byte("hello"))
 	})
-	buf := &bytes.Buffer{}
-	l := utils.NewFileLogger(buf, utils.INFO)
 
 	trace := &bytes.Buffer{}
-
-	t, err := New(handler, trace, Logger(l))
+	t, err := New(handler, trace)
 	c.Assert(err, IsNil)
 
 	srv := httptest.NewServer(t)
@@ -64,12 +61,9 @@ func (s *TraceSuite) TestTraceCaptureHeaders(c *C) {
 		utils.CopyHeaders(w.Header(), respHeaders)
 		w.Write([]byte("hello"))
 	})
-	buf := &bytes.Buffer{}
-	l := utils.NewFileLogger(buf, utils.INFO)
 
 	trace := &bytes.Buffer{}
-
-	t, err := New(handler, trace, Logger(l), RequestHeaders("X-Req-B", "X-Req-A"), ResponseHeaders("X-Re-1", "X-Re-2"))
+	t, err := New(handler, trace, RequestHeaders("X-Req-B", "X-Req-A"), ResponseHeaders("X-Re-1", "X-Re-2"))
 	c.Assert(err, IsNil)
 
 	srv := httptest.NewServer(t)
@@ -91,12 +85,9 @@ func (s *TraceSuite) TestTraceTLS(c *C) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		w.Write([]byte("hello"))
 	})
-	buf := &bytes.Buffer{}
-	l := utils.NewFileLogger(buf, utils.INFO)
 
 	trace := &bytes.Buffer{}
-
-	t, err := New(handler, trace, Logger(l))
+	t, err := New(handler, trace)
 	c.Assert(err, IsNil)
 
 	srv := httptest.NewUnstartedServer(t)
@@ -113,8 +104,9 @@ func (s *TraceSuite) TestTraceTLS(c *C) {
 	conn, err := tls.Dial("tcp", u.Host, config)
 	c.Assert(err, IsNil)
 
-	fmt.Fprintf(conn, "GET / HTTP/1.0\r\n\r\n")
+	fmt.Fprint(conn, "GET / HTTP/1.0\r\n\r\n")
 	status, err := bufio.NewReader(conn).ReadString('\n')
+	c.Assert(err, IsNil)
 	c.Assert(status, Equals, "HTTP/1.0 200 OK\r\n")
 	state := conn.ConnectionState()
 	conn.Close()

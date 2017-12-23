@@ -5,9 +5,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/mailgun/oxy/forward"
-	"github.com/mailgun/oxy/testutils"
-	"github.com/mailgun/oxy/utils"
+	"github.com/vulcand/oxy/forward"
+	"github.com/vulcand/oxy/testutils"
+	"github.com/vulcand/oxy/utils"
 
 	. "gopkg.in/check.v1"
 )
@@ -203,6 +203,24 @@ func (s *RRSuite) TestWeighted(c *C) {
 	w, ok = lb.ServerWeight(testutils.ParseURI("http://caramba:4000"))
 	c.Assert(w, Equals, -1)
 	c.Assert(ok, Equals, false)
+}
+
+func (s *RRSuite) TestRequestRewriteListener(c *C) {
+	a := testutils.NewResponder("a")
+	defer a.Close()
+
+	b := testutils.NewResponder("b")
+	defer b.Close()
+
+	fwd, err := forward.New()
+	c.Assert(err, IsNil)
+
+	lb, err := New(fwd,
+		RoundRobinRequestRewriteListener(func(oldReq *http.Request, newReq *http.Request) {
+		}))
+	c.Assert(err, IsNil)
+
+	c.Assert(lb.requestRewriteListener, NotNil)
 }
 
 func seq(c *C, url string, repeat int) []string {

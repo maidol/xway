@@ -22,5 +22,8 @@ _testmain.go
 *.exe
 *.test
 *.prof
+.idea/
 
 flymake_*
+
+vendor/

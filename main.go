@@ -1,10 +1,10 @@
 package main
 
 import (
-	"net/http"
 	"os"
 	"runtime"
 
+	logrus_logstash "github.com/bshuster-repo/logrus-logstash-hook"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/negroni"
 
@@ -12,19 +12,29 @@ import (
 	"xway/router"
 )
 
-type resp struct {
-	data []byte
-	rw   http.ResponseWriter
-}
-
-// var logger logrus.Logger
 var appLogger *logrus.Entry
 
 func init() {
 	logger := logrus.New()
 	logger.Level = logrus.InfoLevel
-	logger.Formatter = new(logrus.JSONFormatter)
-	logger.Out = os.Stdout
+	logger.Formatter = new(logrus.TextFormatter)
+	// logger.Out = os.Stdout
+
+	// conn, err := net.Dial("tcp", "logstash.mycompany.net:8911")
+	// if err != nil {
+	// 	logrus.Fatal(err)
+	// }
+
+	// hook := logrus_logstash.New(conn, logrus_logstash.DefaultFormatter(logrus.Fields{"type": "xway"}))
+
+	// if err != nil {
+	// 	logrus.Fatal(err)
+	// }
+
+	// logger.Hooks.Add(hook)
+
+	stdHook := logrus_logstash.New(os.Stdout, logrus_logstash.DefaultFormatter(logrus.Fields{"type": "xway"}))
+	logger.Hooks.Add(stdHook)
 
 	appLogger = logger.WithFields(logrus.Fields{"name": "app"})
 }
