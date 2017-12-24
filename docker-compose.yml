@@ -5,4 +5,4 @@ services:
     image: cw-gateway
     build: .
     ports:
-      - 8799:8799
+      - 9799:9799
