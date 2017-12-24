@@ -1,15 +1,16 @@
-Oxy
+Oxy [![Build Status](https://travis-ci.org/vulcand/oxy.svg?branch=master)](https://travis-ci.org/vulcand/oxy)
 =====
 
 Oxy is a Go library with HTTP handlers that enhance HTTP standard library:
 
-* [Stream](http://godoc.org/github.com/mailgun/oxy/stream) retries and buffers requests and responses 
-* [Forward](http://godoc.org/github.com/mailgun/oxy/forward) forwards requests to remote location and rewrites headers 
-* [Roundrobin](http://godoc.org/github.com/mailgun/oxy/roundrobin) is a round-robin load balancer 
-* [Circuit Breaker](http://godoc.org/github.com/mailgun/oxy/cbreaker) Hystrix-style circuit breaker
-* [Connlimit](http://godoc.org/github.com/mailgun/oxy/connlimit) Simultaneous connections limiter
-* [Ratelimit](http://godoc.org/github.com/mailgun/oxy/ratelimit) Rate limiter (based on tokenbucket algo)
-* [Trace](http://godoc.org/github.com/mailgun/oxy/trace) Structured request and response logger
+* [Buffer](http://godoc.org/github.com/vulcand/oxy/buffer) retries and buffers requests and responses 
+* [Stream](http://godoc.org/github.com/vulcand/oxy/stream) passes-through requests, supports chunked encoding with configurable flush interval 
+* [Forward](http://godoc.org/github.com/vulcand/oxy/forward) forwards requests to remote location and rewrites headers 
+* [Roundrobin](http://godoc.org/github.com/vulcand/oxy/roundrobin) is a round-robin load balancer 
+* [Circuit Breaker](http://godoc.org/github.com/vulcand/oxy/cbreaker) Hystrix-style circuit breaker
+* [Connlimit](http://godoc.org/github.com/vulcand/oxy/connlimit) Simultaneous connections limiter
+* [Ratelimit](http://godoc.org/github.com/vulcand/oxy/ratelimit) Rate limiter (based on tokenbucket algo)
+* [Trace](http://godoc.org/github.com/vulcand/oxy/trace) Structured request and response logger
 
 It is designed to be fully compatible with http standard library, easy to customize and reuse.
 
@@ -18,7 +19,7 @@ Status
 
 * Initial design is completed
 * Covered by tests
-* Used as a reverse proxy engine in [Vulcand](https://github.com/mailgun/vulcand)
+* Used as a reverse proxy engine in [Vulcand](https://github.com/vulcand/vulcand)
 
 Quickstart
 -----------
@@ -32,7 +33,8 @@ Simple reverse proxy
 
 import (
   "net/http"
-  "github.com/mailgun/oxy/forward"
+  "github.com/vulcand/oxy/forward"
+  "github.com/vulcand/oxy/testutils"
   )
 
 // Forwards incoming requests to whatever location URL points to, adds proper forwarding headers
@@ -47,7 +49,7 @@ redirect := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 // that's it! our reverse proxy is ready!
 s := &http.Server{
 	Addr:           ":8080",
-	Handler:        myHandler,
+	Handler:        redirect,
 }
 s.ListenAndServe()
 ```
@@ -59,8 +61,8 @@ As a next step, let us add a round robin load-balancer:
 
 import (
   "net/http"
-  "github.com/mailgun/oxy/forward"
-  "github.com/mailgun/oxy/roundrobin"
+  "github.com/vulcand/oxy/forward"
+  "github.com/vulcand/oxy/roundrobin"
   )
 
 // Forwards incoming requests to whatever location URL points to, adds proper forwarding headers
@@ -77,15 +79,16 @@ s := &http.Server{
 s.ListenAndServe()
 ```
 
-What if we want to handle retries and replay the request in case of errors? `stream` handler will help:
+What if we want to handle retries and replay the request in case of errors? `buffer` handler will help:
 
 
 ```go
 
 import (
   "net/http"
-  "github.com/mailgun/oxy/forward"
-  "github.com/mailgun/oxy/roundrobin"
+  "github.com/vulcand/oxy/forward"
+  "github.com/vulcand/oxy/buffer"
+  "github.com/vulcand/oxy/roundrobin"
   )
 
 // Forwards incoming requests to whatever location URL points to, adds proper forwarding headers
@@ -93,9 +96,9 @@ import (
 fwd, _ := forward.New()
 lb, _ := roundrobin.New(fwd)
 
-// stream will read the request body and will replay the request again in case if forward returned status
+// buffer will read the request body and will replay the request again in case if forward returned status
 // corresponding to nework error (e.g. Gateway Timeout)
-stream, _ := stream.New(lb, stream.Retry(`IsNetworkError() && Attempts() < 2`))
+buffer, _ := buffer.New(lb, buffer.Retry(`IsNetworkError() && Attempts() < 2`))
 
 lb.UpsertServer(url1)
 lb.UpsertServer(url2)
@@ -103,7 +106,7 @@ lb.UpsertServer(url2)
 // that's it! our reverse proxy is ready!
 s := &http.Server{
 	Addr:           ":8080",
-	Handler:        stream,
+	Handler:        buffer,
 }
 s.ListenAndServe()
 ```

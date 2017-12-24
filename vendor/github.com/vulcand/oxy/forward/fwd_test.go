@@ -1,7 +1,6 @@
 package forward
 
 import (
-	"bytes"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -9,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mailgun/oxy/testutils"
-	"github.com/mailgun/oxy/utils"
+	"github.com/vulcand/oxy/testutils"
+	"github.com/vulcand/oxy/utils"
 
 	. "gopkg.in/check.v1"
 )
@@ -25,9 +24,11 @@ var _ = Suite(&FwdSuite{})
 func (s *FwdSuite) TestForwardHopHeaders(c *C) {
 	called := false
 	var outHeaders http.Header
+	var outHost, expectedHost string
 	srv := testutils.NewHandler(func(w http.ResponseWriter, req *http.Request) {
 		called = true
 		outHeaders = req.Header
+		outHost = req.Host
 		w.Write([]byte("hello"))
 	})
 	defer srv.Close()
@@ -37,6 +38,7 @@ func (s *FwdSuite) TestForwardHopHeaders(c *C) {
 
 	proxy := testutils.NewHandler(func(w http.ResponseWriter, req *http.Request) {
 		req.URL = testutils.ParseURI(srv.URL)
+		expectedHost = req.URL.Host
 		f.ServeHTTP(w, req)
 	})
 	defer proxy.Close()
@@ -53,6 +55,7 @@ func (s *FwdSuite) TestForwardHopHeaders(c *C) {
 	c.Assert(called, Equals, true)
 	c.Assert(outHeaders.Get(Connection), Equals, "")
 	c.Assert(outHeaders.Get(KeepAlive), Equals, "")
+	c.Assert(outHost, Equals, expectedHost)
 }
 
 func (s *FwdSuite) TestDefaultErrHandler(c *C) {
@@ -89,6 +92,30 @@ func (s *FwdSuite) TestCustomErrHandler(c *C) {
 	c.Assert(string(body), Equals, http.StatusText(http.StatusTeapot))
 }
 
+func (s *FwdSuite) TestResponseModifier(c *C) {
+	srv := testutils.NewHandler(func(w http.ResponseWriter, req *http.Request) {
+		w.Write([]byte("hello"))
+	})
+	defer srv.Close()
+
+	f, err := New(ResponseModifier(func(resp *http.Response) error {
+		resp.Header.Add("X-Test", "CUSTOM")
+		return nil
+	}))
+	c.Assert(err, IsNil)
+
+	proxy := testutils.NewHandler(func(w http.ResponseWriter, req *http.Request) {
+		req.URL = testutils.ParseURI(srv.URL)
+		f.ServeHTTP(w, req)
+	})
+	defer proxy.Close()
+
+	re, _, err := testutils.Get(proxy.URL)
+	c.Assert(err, IsNil)
+	c.Assert(re.StatusCode, Equals, http.StatusOK)
+	c.Assert(re.Header.Get("X-Test"), Equals, "CUSTOM")
+}
+
 // Makes sure hop-by-hop headers are removed
 func (s *FwdSuite) TestForwardedHeaders(c *C) {
 	var outHeaders http.Header
@@ -98,7 +125,7 @@ func (s *FwdSuite) TestForwardedHeaders(c *C) {
 	})
 	defer srv.Close()
 
-	f, err := New()
+	f, err := New(Rewriter(&HeaderRewriter{TrustForwardHeader: true, Hostname: "hello"}))
 	c.Assert(err, IsNil)
 
 	proxy := testutils.NewHandler(func(w http.ResponseWriter, req *http.Request) {
@@ -108,8 +135,10 @@ func (s *FwdSuite) TestForwardedHeaders(c *C) {
 	defer proxy.Close()
 
 	headers := http.Header{
-		XForwardedProto: []string{"httpx"},
-		XForwardedFor:   []string{"192.168.1.1"},
+		XForwardedProto:  []string{"httpx"},
+		XForwardedFor:    []string{"192.168.1.1"},
+		XForwardedServer: []string{"foobar"},
+		XForwardedHost:   []string{"upstream-foobar"},
 	}
 
 	re, _, err := testutils.Get(proxy.URL, testutils.Headers(headers))
@@ -117,6 +146,8 @@ func (s *FwdSuite) TestForwardedHeaders(c *C) {
 	c.Assert(re.StatusCode, Equals, http.StatusOK)
 	c.Assert(outHeaders.Get(XForwardedProto), Equals, "httpx")
 	c.Assert(strings.Contains(outHeaders.Get(XForwardedFor), "192.168.1.1"), Equals, true)
+	c.Assert(strings.Contains(outHeaders.Get(XForwardedHost), "upstream-foobar"), Equals, true)
+	c.Assert(outHeaders.Get(XForwardedServer), Equals, "hello")
 }
 
 func (s *FwdSuite) TestCustomRewriter(c *C) {
@@ -178,10 +209,7 @@ func (s *FwdSuite) TestCustomLogger(c *C) {
 	})
 	defer srv.Close()
 
-	buf := &bytes.Buffer{}
-	l := utils.NewFileLogger(buf, utils.INFO)
-
-	f, err := New(Logger(l))
+	f, err := New()
 	c.Assert(err, IsNil)
 
 	proxy := testutils.NewHandler(func(w http.ResponseWriter, req *http.Request) {
@@ -193,7 +221,6 @@ func (s *FwdSuite) TestCustomLogger(c *C) {
 	re, _, err := testutils.Get(proxy.URL)
 	c.Assert(err, IsNil)
 	c.Assert(re.StatusCode, Equals, http.StatusOK)
-	c.Assert(strings.Contains(buf.String(), srv.URL), Equals, true)
 }
 
 func (s *FwdSuite) TestEscapedURL(c *C) {
@@ -216,6 +243,7 @@ func (s *FwdSuite) TestEscapedURL(c *C) {
 	path := "/log/http%3A%2F%2Fwww.site.com%2Fsomething?a=b"
 
 	request, err := http.NewRequest("GET", proxy.URL, nil)
+	c.Assert(err, IsNil)
 	parsed := testutils.ParseURI(proxy.URL)
 	parsed.Opaque = path
 	request.URL = parsed
@@ -233,10 +261,7 @@ func (s *FwdSuite) TestForwardedProto(c *C) {
 	})
 	defer srv.Close()
 
-	buf := &bytes.Buffer{}
-	l := utils.NewFileLogger(buf, utils.INFO)
-
-	f, err := New(Logger(l))
+	f, err := New()
 	c.Assert(err, IsNil)
 
 	proxy := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
@@ -251,15 +276,13 @@ func (s *FwdSuite) TestForwardedProto(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(re.StatusCode, Equals, http.StatusOK)
 	c.Assert(proto, Equals, "https")
-
-	c.Assert(strings.Contains(buf.String(), "tls"), Equals, true)
 }
 
 func (s *FwdSuite) TestChunkedResponseConversion(c *C) {
 	srv := testutils.NewHandler(func(w http.ResponseWriter, req *http.Request) {
 		h := w.(http.Hijacker)
 		conn, _, _ := h.Hijack()
-		fmt.Fprintf(conn, "HTTP/1.0 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n4\r\ntest\r\n5\r\ntest1\r\n5\r\ntest2\r\n0\r\n\r\n")
+		fmt.Fprintf(conn, "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n4\r\ntest\r\n5\r\ntest1\r\n5\r\ntest2\r\n0\r\n\r\n")
 		conn.Close()
 	})
 	defer srv.Close()

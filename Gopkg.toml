@@ -21,9 +21,17 @@
 
 
 [[constraint]]
+  name = "github.com/bshuster-repo/logrus-logstash-hook"
+  revision = "ebf008572634916f3a9433d9471a0cd3f68fc772"
+
+[[constraint]]
+  name = "github.com/sirupsen/logrus"
+  version = "1.0.4"
+
+[[constraint]]
   name = "github.com/urfave/negroni"
   version = "0.3.0"
 
 [[constraint]]
-  branch = "alexander/cbfix"
+  branch = "master"
   name = "github.com/vulcand/oxy"

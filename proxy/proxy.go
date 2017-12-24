@@ -32,7 +32,7 @@ func New() (http.HandlerFunc, error) {
 	}
 
 	redirect := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		r.URL = testutils.ParseURI("http://192.168.2.101:8708")
+		r.URL = testutils.ParseURI("https://eapi.ciwong.com/gateway/")
 		fwd.ServeHTTP(w, r)
 	})
 	return redirect, nil

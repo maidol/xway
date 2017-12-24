@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mailgun/oxy/utils"
-	"github.com/mailgun/predicate"
+	"github.com/vulcand/predicate"
 )
 
 func IsValidExpression(expr string) bool {
@@ -17,7 +16,6 @@ type context struct {
 	r            *http.Request
 	attempt      int
 	responseCode int
-	log          utils.Logger
 }
 
 type hpredicate func(*context) bool

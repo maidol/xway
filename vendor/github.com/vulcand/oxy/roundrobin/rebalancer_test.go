@@ -1,22 +1,19 @@
 package roundrobin
 
 import (
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"time"
 
-	"github.com/mailgun/oxy/forward"
-	"github.com/mailgun/oxy/testutils"
-	"github.com/mailgun/oxy/utils"
 	"github.com/mailgun/timetools"
-
+	"github.com/vulcand/oxy/forward"
+	"github.com/vulcand/oxy/testutils"
 	. "gopkg.in/check.v1"
 )
 
 type RBSuite struct {
 	clock *timetools.FreezedTime
-	log   utils.Logger
 }
 
 var _ = Suite(&RBSuite{
@@ -24,10 +21,6 @@ var _ = Suite(&RBSuite{
 		CurrentTime: time.Date(2012, 3, 4, 5, 6, 7, 0, time.UTC),
 	},
 })
-
-func (s *RBSuite) SetUpSuite(c *C) {
-	s.log = utils.NewFileLogger(os.Stdout, utils.INFO)
-}
 
 func (s *RBSuite) TestRebalancerNormalOperation(c *C) {
 	a, b := testutils.NewResponder("a"), testutils.NewResponder("b")
@@ -111,7 +104,7 @@ func (s *RBSuite) TestRebalancerRecovery(c *C) {
 	newMeter := func() (Meter, error) {
 		return &testMeter{}, nil
 	}
-	rb, err := NewRebalancer(lb, RebalancerMeter(newMeter), RebalancerClock(s.clock), RebalancerLogger(s.log))
+	rb, err := NewRebalancer(lb, RebalancerMeter(newMeter), RebalancerClock(s.clock))
 	c.Assert(err, IsNil)
 
 	rb.UpsertServer(testutils.ParseURI(a.URL))
@@ -166,7 +159,7 @@ func (s *RBSuite) TestRebalancerCascading(c *C) {
 	newMeter := func() (Meter, error) {
 		return &testMeter{}, nil
 	}
-	rb, err := NewRebalancer(lb, RebalancerMeter(newMeter), RebalancerClock(s.clock), RebalancerLogger(s.log))
+	rb, err := NewRebalancer(lb, RebalancerMeter(newMeter), RebalancerClock(s.clock))
 	c.Assert(err, IsNil)
 
 	rb.UpsertServer(testutils.ParseURI(a.URL))
@@ -221,7 +214,7 @@ func (s *RBSuite) TestRebalancerAllBad(c *C) {
 	newMeter := func() (Meter, error) {
 		return &testMeter{}, nil
 	}
-	rb, err := NewRebalancer(lb, RebalancerMeter(newMeter), RebalancerClock(s.clock), RebalancerLogger(s.log))
+	rb, err := NewRebalancer(lb, RebalancerMeter(newMeter), RebalancerClock(s.clock))
 	c.Assert(err, IsNil)
 
 	rb.UpsertServer(testutils.ParseURI(a.URL))
@@ -262,7 +255,7 @@ func (s *RBSuite) TestRebalancerReset(c *C) {
 	newMeter := func() (Meter, error) {
 		return &testMeter{}, nil
 	}
-	rb, err := NewRebalancer(lb, RebalancerMeter(newMeter), RebalancerClock(s.clock), RebalancerLogger(s.log))
+	rb, err := NewRebalancer(lb, RebalancerMeter(newMeter), RebalancerClock(s.clock))
 	c.Assert(err, IsNil)
 
 	rb.UpsertServer(testutils.ParseURI(a.URL))
@@ -325,6 +318,71 @@ func (s *RBSuite) TestRebalancerLive(c *C) {
 	c.Assert(rb.servers[0].curWeight, Equals, FSMMaxWeight)
 	c.Assert(rb.servers[1].curWeight, Equals, FSMMaxWeight)
 	c.Assert(rb.servers[2].curWeight, Equals, 1)
+}
+
+func (s *RBSuite) TestRequestRewriteListener(c *C) {
+	a, b := testutils.NewResponder("a"), testutils.NewResponder("b")
+	defer a.Close()
+	defer b.Close()
+
+	fwd, err := forward.New()
+	c.Assert(err, IsNil)
+
+	lb, err := New(fwd)
+	c.Assert(err, IsNil)
+
+	rb, err := NewRebalancer(lb,
+		RebalancerRequestRewriteListener(func(oldReq *http.Request, newReq *http.Request) {
+		}))
+	c.Assert(err, IsNil)
+
+	c.Assert(rb.requestRewriteListener, NotNil)
+}
+
+func (s *RBSuite) TestRebalancerStickySession(c *C) {
+	a, b, x := testutils.NewResponder("a"), testutils.NewResponder("b"), testutils.NewResponder("x")
+	defer a.Close()
+	defer b.Close()
+	defer x.Close()
+
+	sticky := NewStickySession("test")
+	c.Assert(sticky, NotNil)
+
+	fwd, err := forward.New()
+	c.Assert(err, IsNil)
+
+	lb, err := New(fwd)
+	c.Assert(err, IsNil)
+
+	rb, err := NewRebalancer(lb, RebalancerStickySession(sticky))
+	c.Assert(err, IsNil)
+
+	rb.UpsertServer(testutils.ParseURI(a.URL))
+	rb.UpsertServer(testutils.ParseURI(b.URL))
+	rb.UpsertServer(testutils.ParseURI(x.URL))
+
+	proxy := httptest.NewServer(rb)
+	defer proxy.Close()
+
+	for i := 0; i < 10; i++ {
+		req, err := http.NewRequest(http.MethodGet, proxy.URL, nil)
+		c.Assert(err, IsNil)
+		req.AddCookie(&http.Cookie{Name: "test", Value: a.URL})
+
+		resp, err := http.DefaultClient.Do(req)
+		c.Assert(err, IsNil)
+
+		defer resp.Body.Close()
+		body, err := ioutil.ReadAll(resp.Body)
+
+		c.Assert(err, IsNil)
+		c.Assert(string(body), Equals, "a")
+	}
+
+	c.Assert(rb.RemoveServer(testutils.ParseURI(a.URL)), IsNil)
+	c.Assert(seq(c, proxy.URL, 3), DeepEquals, []string{"b", "x", "b"})
+	c.Assert(rb.RemoveServer(testutils.ParseURI(b.URL)), IsNil)
+	c.Assert(seq(c, proxy.URL, 3), DeepEquals, []string{"x", "x", "x"})
 }
 
 type testMeter struct {
