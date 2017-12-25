@@ -35,7 +35,7 @@ func New() (http.HandlerFunc, error) {
 	}
 
 	redirect := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		xwayCtx := xwaycontext.GetXWayContext(r.Context(), "xway")
+		xwayCtx := xwaycontext.DefaultXWayContext(r.Context())
 		// cwgCtx := r.Context().Value(xwaycontext.ContextKey{Key: "cwg"})
 		originalRequest := xwayCtx.GetOriginalRequest()
 		fmt.Println("proxy url -->>", originalRequest.Host, originalRequest.URL)

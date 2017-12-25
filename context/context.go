@@ -29,6 +29,10 @@ func (xc *XWayContext) SetOriginalRequest(val *http.Request) error {
 	return nil
 }
 
+func DefaultXWayContext(ctx context.Context) *XWayContext {
+	return ctx.Value(ContextKey{}).(*XWayContext)
+}
+
 func GetXWayContext(ctx context.Context, xwayKey string) *XWayContext {
 	return ctx.Value(ContextKey{Key: xwayKey}).(*XWayContext)
 }
