@@ -1,10 +1,13 @@
 package proxy
 
 import (
+	"fmt"
 	"log"
 	"net"
 	"net/http"
 	"time"
+
+	"xway/context"
 
 	"github.com/vulcand/oxy/forward"
 	"github.com/vulcand/oxy/testutils"
@@ -32,7 +35,12 @@ func New() (http.HandlerFunc, error) {
 	}
 
 	redirect := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		xwayCtx := xwaycontext.GetXWayContext(r.Context(), "xway")
+		// cwgCtx := r.Context().Value(xwaycontext.ContextKey{Key: "cwg"})
+		originalRequest := xwayCtx.GetOriginalRequest()
+		fmt.Println("proxy url -->>", originalRequest.Host, originalRequest.URL)
 		r.URL = testutils.ParseURI("https://eapi.ciwong.com/gateway/")
+		fmt.Println("forward url -->>", r.URL)
 		fwd.ServeHTTP(w, r)
 	})
 	return redirect, nil
