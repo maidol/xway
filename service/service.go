@@ -64,6 +64,7 @@ func Run() error {
 	n.Use(router.New())
 	// proxy
 	p, err := proxy.NewDo()
+	// p, err := proxy.New()
 	if err != nil {
 		return err
 	}

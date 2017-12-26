@@ -4,3 +4,4 @@ flymake_*
 *.go~
 *.exe
 tmp
+debug

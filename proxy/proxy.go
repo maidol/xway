@@ -35,12 +35,18 @@ func NewDo() (http.HandlerFunc, error) {
 	client := &http.Client{Transport: tr}
 
 	pr := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// xwayCtx := xwaycontext.DefaultXWayContext(r.Context())
-		// originalRequest := xwayCtx.GetOriginalRequest()
-		// fmt.Println(originalRequest.Host, originalRequest.URL)
+		xwayCtx := xwaycontext.DefaultXWayContext(r.Context())
+		originalRequest := xwayCtx.GetOriginalRequest()
+		fmt.Printf("-> url original request: %v, %v\n", originalRequest.Host, originalRequest.URL)
 
-		u, _ := url.Parse("http://192.168.1.46:8000" + r.URL.String())
+		u, err := url.Parse("http://192.168.2.102:8708" + r.URL.String())
 		fmt.Printf("-> url forward to: %v, %v\n", u.Host, u)
+		if err != nil {
+			fmt.Printf("url.Parse err %v\n", err)
+			er := xerror.NewRequestError(xemun.RetProxyError, xemun.ECodeProxyFailed, err.Error())
+			er.Write(w)
+			return
+		}
 
 		outReq := new(http.Request)
 		*outReq = *r           // includes shallow copies of maps, but we handle this in Director
@@ -73,7 +79,7 @@ func NewDo() (http.HandlerFunc, error) {
 
 		// body = append(body, ([]byte("abc"))...)
 		// w.Header().Set("Content-Length", string(len(body)))
-
+		fmt.Printf("-> response data: %v\n", string(body))
 		w.Write(body)
 	})
 	return pr, nil
@@ -105,7 +111,8 @@ func New() (http.HandlerFunc, error) {
 		// cwgCtx := r.Context().Value(xwaycontext.ContextKey{Key: "cwg"})
 		originalRequest := xwayCtx.GetOriginalRequest()
 		fmt.Println("-> url proxy:", originalRequest.Host, originalRequest.URL)
-		r.URL = testutils.ParseURI("https://eapi.ciwong.com/gateway/")
+		// r.URL = testutils.ParseURI("https://eapi.ciwong.com/gateway/")
+		r.URL = testutils.ParseURI("http://192.168.2.102:8708")
 		fmt.Println("-> url forward:", r.URL)
 		fwd.ServeHTTP(w, r)
 	})

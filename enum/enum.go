@@ -6,7 +6,7 @@ import "net/http"
 var RetMsg = map[int]string{
 	RetNormal:     "正常",
 	RetAbnormal:   "异常",
-	RetProxyError: "代理相关的异常",
+	RetProxyError: "代理相关异常",
 }
 
 // CodeMsg ...
