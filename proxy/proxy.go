@@ -9,6 +9,8 @@ import (
 	"net/url"
 	"time"
 
+	"xway/context"
+
 	"github.com/vulcand/oxy/forward"
 	"github.com/vulcand/oxy/testutils"
 
@@ -33,10 +35,12 @@ func NewDo() (http.HandlerFunc, error) {
 	client := &http.Client{Transport: tr}
 
 	pr := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		u, _ := url.Parse("http://192.168.1.46:800" + r.URL.String())
-		// u, _ := url.Parse("https://eapi.ciwong.com" + r.URL.String())
-		// u := testutils.ParseURI("https://eapi.ciwong.com" + r.URL.String())
-		fmt.Printf("forward to url -->> %v, %v\n", u.Host, u)
+		// xwayCtx := xwaycontext.DefaultXWayContext(r.Context())
+		// originalRequest := xwayCtx.GetOriginalRequest()
+		// fmt.Println(originalRequest.Host, originalRequest.URL)
+
+		u, _ := url.Parse("http://192.168.1.46:8000" + r.URL.String())
+		fmt.Printf("-> url forward to: %v, %v\n", u.Host, u)
 
 		outReq := new(http.Request)
 		*outReq = *r           // includes shallow copies of maps, but we handle this in Director
@@ -62,7 +66,6 @@ func NewDo() (http.HandlerFunc, error) {
 		}
 
 		for k, v := range resp.Header {
-			// fmt.Printf("%v %v\n", k, v)
 			for _, s := range v {
 				w.Header().Add(k, s)
 			}
@@ -98,7 +101,12 @@ func New() (http.HandlerFunc, error) {
 	}
 
 	redirect := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		r.URL = testutils.ParseURI("https://eapi.ciwong.com")
+		xwayCtx := xwaycontext.DefaultXWayContext(r.Context())
+		// cwgCtx := r.Context().Value(xwaycontext.ContextKey{Key: "cwg"})
+		originalRequest := xwayCtx.GetOriginalRequest()
+		fmt.Println("-> url proxy:", originalRequest.Host, originalRequest.URL)
+		r.URL = testutils.ParseURI("https://eapi.ciwong.com/gateway/")
+		fmt.Println("-> url forward:", r.URL)
 		fwd.ServeHTTP(w, r)
 	})
 	return redirect, nil

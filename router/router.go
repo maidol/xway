@@ -17,7 +17,7 @@ type Router struct {
 
 func (rt *Router) ServeHTTP(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 	// 处理路由匹配
-	fmt.Printf("router url for -->> %v, %v\n", r.Host, r.URL)
+	fmt.Printf("-> url router for: %v, %v\n", r.Host, r.URL)
 	if !rt.IsValid(r.URL.Path) {
 		DefaultNotFound(rw, r)
 		return

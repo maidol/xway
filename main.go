@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"os"
 	"runtime"
 
@@ -9,6 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/negroni"
 
+	"xway/middleware"
 	"xway/proxy"
 	"xway/router"
 )
@@ -52,17 +52,12 @@ func main() {
 	// negroni
 	n := negroni.New()
 
+	// context
+	n.UseFunc(xwaymw.DefaultXWayContext())
 	// router
-	r := router.New()
-
+	n.Use(router.New())
 	// proxy
-	// p, _ := proxy.New()
-	p, err := proxy.NewDo()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	n.Use(r)
+	p, _ := proxy.NewDo()
 	n.UseHandlerFunc(p)
 
 	n.Run(":9799")
