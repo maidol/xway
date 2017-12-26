@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"os"
 	"runtime"
 
@@ -55,7 +56,11 @@ func main() {
 	r := router.New()
 
 	// proxy
-	p, _ := proxy.New()
+	// p, _ := proxy.New()
+	p, err := proxy.NewDo()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	n.Use(r)
 	n.UseHandlerFunc(p)
