@@ -2,8 +2,6 @@ package xwaycontext
 
 import (
 	"context"
-	"errors"
-	"net/http"
 )
 
 type ContextKey struct {
@@ -11,23 +9,23 @@ type ContextKey struct {
 }
 
 type XWayContext struct {
-	originalRequest *http.Request
-	Map             map[interface{}]interface{}
-	UserName        string
-	Password        string
+	// originalRequest *http.Request
+	Map      map[interface{}]interface{}
+	UserName string
+	Password string
 }
 
-func (xc *XWayContext) GetOriginalRequest() *http.Request {
-	return xc.originalRequest
-}
+// func (xc *XWayContext) GetOriginalRequest() *http.Request {
+// 	return xc.originalRequest
+// }
 
-func (xc *XWayContext) SetOriginalRequest(val *http.Request) error {
-	if xc.originalRequest != nil {
-		return errors.New("originalRequest had been set")
-	}
-	xc.originalRequest = val
-	return nil
-}
+// func (xc *XWayContext) SetOriginalRequest(val *http.Request) error {
+// 	if xc.originalRequest != nil {
+// 		return errors.New("originalRequest had been set")
+// 	}
+// 	xc.originalRequest = val
+// 	return nil
+// }
 
 func DefaultXWayContext(ctx context.Context) *XWayContext {
 	return ctx.Value(ContextKey{}).(*XWayContext)

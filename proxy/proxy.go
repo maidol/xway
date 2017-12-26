@@ -36,8 +36,7 @@ func NewDo() (http.HandlerFunc, error) {
 
 	pr := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		xwayCtx := xwaycontext.DefaultXWayContext(r.Context())
-		originalRequest := xwayCtx.GetOriginalRequest()
-		fmt.Printf("-> url original request: %v, %v\n", originalRequest.Host, originalRequest.URL)
+		fmt.Printf("%v\n", xwayCtx.UserName)
 
 		u, err := url.Parse("http://192.168.2.102:8708" + r.URL.String())
 		fmt.Printf("-> url forward to: %v, %v\n", u.Host, u)
@@ -108,10 +107,9 @@ func New() (http.HandlerFunc, error) {
 
 	redirect := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		xwayCtx := xwaycontext.DefaultXWayContext(r.Context())
+		fmt.Printf("%v\n", xwayCtx.UserName)
 		// cwgCtx := r.Context().Value(xwaycontext.ContextKey{Key: "cwg"})
-		originalRequest := xwayCtx.GetOriginalRequest()
-		fmt.Println("-> url proxy:", originalRequest.Host, originalRequest.URL)
-		// r.URL = testutils.ParseURI("https://eapi.ciwong.com/gateway/")
+
 		r.URL = testutils.ParseURI("http://192.168.2.102:8708")
 		fmt.Println("-> url forward:", r.URL)
 		fwd.ServeHTTP(w, r)

@@ -21,7 +21,6 @@ func DefaultXWayContext() negroni.HandlerFunc {
 func XWayContext(opt ContextMWOption) negroni.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 		xwayCtx := xwaycontext.XWayContext{Map: map[interface{}]interface{}{}}
-		xwayCtx.SetOriginalRequest(r)
 		ctx := context.WithValue(r.Context(), opt.Key, &xwayCtx)
 		// ctx := context.WithValue(r.Context(), xwaycontext.ContextKey{Key: "xway"}, &xwayCtx)
 		// ctx = context.WithValue(ctx, xwaycontext.ContextKey{Key: "cwg"}, map[interface{}]interface{}{"mykey": "cwg"})
