@@ -11,3 +11,13 @@
 
 ### 第二阶段
 * 2018.01.23 ~ 日志模块实现
+
+## etcdctl
+----
+
+### 添加测试数据
+```powershell
+etcdctl put /vulcand/backends/b1/backend '{\"Type\":\"http\",\"Settings\":{\"KeepAlive\":{\"MaxIdleConnsPerHost\":200,\"Period\":\"4s\"}}}'
+
+etcdctl put /xway/frontends/f1/frontend '{\"domainHost\":\"eapi.jiaofucloud.cn\",\"routeUrl\":\"/v5/user/\",\"redirectHost\":\"192.168.2.162:3038\",\"forwardUrl\":\"/user/\",\"type\":\"1\",\"config\":\"{\"auth\":[\"oauth\"],\"operation\":[{\"rate\":\"0\"}]}\"}'
+```

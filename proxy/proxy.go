@@ -54,7 +54,7 @@ func NewDo() (http.HandlerFunc, error) {
 		outReq.Host = u.Host
 		// TODO: 需要优化, 处理outReq.Header和outReq.Close, 保持http.client连接 (可参考net/http/httputil/reverseproxy.go ServeHTTP)
 		// fmt.Printf("outReq.Close %v, r.Close %v\n", outReq.Close, r.Close)
-		// r.WithContext(r.Context())/new(http.Request) 的创建方式, 默认值无效, 连接没有复用
+		// r.WithContext(r.Context())/new(http.Request) 的创建方式, outReq.Close默认值无效, 连接没有复用
 		// outReq.Close = false 必须强制重设, 具体原因待探讨
 		outReq.Close = false
 
