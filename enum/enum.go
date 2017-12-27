@@ -13,7 +13,7 @@ var RetMsg = map[int]string{
 var CodeMsg = map[int]string{
 	CodeSuccessed:      "Success",
 	ECodeRouteNotFound: "未能成功匹配代理路由",
-	ECodeProxyFailed:   "源服务器错误",
+	ECodeProxyFailed:   "服务器错误",
 }
 
 // CodeStatus ...
