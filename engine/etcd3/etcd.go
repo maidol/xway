@@ -98,7 +98,7 @@ func (n *ng) GetSnapshot() (*engine.Snapshot, error) {
 		return nil, err
 	}
 
-	frontends, err := n.parseFrontends(filterByPrefix(response.Kvs, n.etcdKey+"vulcand/frontends"))
+	frontends, err := n.parseFrontends(filterByPrefix(response.Kvs, n.etcdKey+"/frontends"))
 	if err != nil {
 		return nil, err
 	}
