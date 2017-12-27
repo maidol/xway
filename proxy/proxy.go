@@ -9,11 +9,10 @@ import (
 	"net/url"
 	"time"
 
-	"xway/context"
-
 	"github.com/vulcand/oxy/forward"
 	"github.com/vulcand/oxy/testutils"
 
+	"xway/context"
 	xemun "xway/enum"
 	xerror "xway/error"
 )
@@ -36,7 +35,8 @@ func NewDo() (http.HandlerFunc, error) {
 
 	pr := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		xwayCtx := xwaycontext.DefaultXWayContext(r.Context())
-		fmt.Printf("%v\n", xwayCtx.UserName)
+		if xwayCtx.UserName != "" {
+		}
 
 		u, err := url.Parse("http://192.168.2.102:8708" + r.URL.String())
 		fmt.Printf("-> url forward to: %v, %v\n", u.Host, u)
@@ -47,11 +47,18 @@ func NewDo() (http.HandlerFunc, error) {
 			return
 		}
 
-		outReq := new(http.Request)
-		*outReq = *r           // includes shallow copies of maps, but we handle this in Director
-		outReq.RequestURI = "" // Request.RequestURI can't be set in client requests.
+		outReq := new(http.Request) // or use outReq := r.WithContext(r.Context())
+		*outReq = *r                // includes shallow copies of maps, but we handle this in Director
+		outReq.RequestURI = ""      // Request.RequestURI can't be set in client requests.
 		outReq.URL = u
 		outReq.Host = u.Host
+		// TODO: 需要优化, 处理outReq.Header和outReq.Close, 保持http.client连接 (可参考net/http/httputil/reverseproxy.go ServeHTTP)
+		// fmt.Printf("outReq.Close %v, r.Close %v\n", outReq.Close, r.Close)
+		// r.WithContext(r.Context())/new(http.Request) 的创建方式, 默认值无效, 连接没有复用
+		// outReq.Close = false 必须强制重设, 具体原因待探讨
+		outReq.Close = false
+
+		// outReq, _ := http.NewRequest("GET", "http://192.168.2.102:8708"+r.URL.String(), nil)
 
 		resp, err := client.Do(outReq)
 		if err != nil {
@@ -78,7 +85,7 @@ func NewDo() (http.HandlerFunc, error) {
 
 		// body = append(body, ([]byte("abc"))...)
 		// w.Header().Set("Content-Length", string(len(body)))
-		fmt.Printf("-> response data: %v\n", string(body))
+		// fmt.Printf("-> response data: %v\n", string(body))
 		w.Write(body)
 	})
 	return pr, nil
@@ -106,12 +113,11 @@ func New() (http.HandlerFunc, error) {
 	}
 
 	redirect := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		xwayCtx := xwaycontext.DefaultXWayContext(r.Context())
-		fmt.Printf("%v\n", xwayCtx.UserName)
-		// cwgCtx := r.Context().Value(xwaycontext.ContextKey{Key: "cwg"})
+		// xwayCtx := xwaycontext.DefaultXWayContext(r.Context())
+		// fmt.Printf("%v\n", xwayCtx.UserName)
 
 		r.URL = testutils.ParseURI("http://192.168.2.102:8708")
-		fmt.Println("-> url forward:", r.URL)
+
 		fwd.ServeHTTP(w, r)
 	})
 	return redirect, nil

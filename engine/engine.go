@@ -1,5 +1,5 @@
 package engine
 
 type Engine interface {
-	GetSnapshot() (interface{}, error)
+	GetSnapshot() (*Snapshot, error)
 }

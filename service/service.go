@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -8,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/negroni"
 
+	"xway/engine/etcd3"
 	"xway/middleware"
 	"xway/proxy"
 	"xway/router"
@@ -40,16 +42,42 @@ func init() {
 	appLogger = logger.WithFields(logrus.Fields{"name": "app"})
 }
 
+func loadNG(options Options) error {
+	// init engine
+	if options.EtcdApiVersion == 2 {
+		return errors.New("Unsupport etcdApiVersion=2")
+	}
+
+	ng, err := etcd3.New(options.EtcdNodes, options.EtcdKey, etcd3.Options{})
+	if err != nil {
+		return err
+	}
+
+	s, err := ng.GetSnapshot()
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("loadNG GetSnapshot %v\n", s)
+
+	return nil
+}
+
 func Run() error {
+	appLogger.Info("初始化......")
+
 	// 加载配置
 	options, err := ParseCommandLine()
 	if err != nil {
 		return fmt.Errorf("failed to parse command line: %s", err)
 	}
+	// fmt.Printf("options: %v\n", options)
 
-	fmt.Printf("options: %v\n", options)
+	if err := loadNG(options); err != nil {
+		return err
+	}
 
-	appLogger.Info("初始化......")
+	return nil
 
 	// TODO: 初始化服务
 	// 加载路由匹配中间件
@@ -64,7 +92,6 @@ func Run() error {
 	n.Use(router.New())
 	// proxy
 	p, err := proxy.NewDo()
-	// p, err := proxy.New()
 	if err != nil {
 		return err
 	}
