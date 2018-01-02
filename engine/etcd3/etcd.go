@@ -10,7 +10,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"xway/engine"
-	"xway/router"
 )
 
 type ng struct {
@@ -77,7 +76,8 @@ func (n *ng) parseFrontends(kvs []*mvccpb.KeyValue) ([]engine.FrontendSpec, erro
 	frontendSpecs := []engine.FrontendSpec{}
 	for _, kv := range kvs {
 		// fmt.Println("-> frontend kv", string(kv.Key), string(kv.Value))
-		frontend, err := engine.FrontendFromJSON(router.Router{}, []byte(kv.Value))
+		// frontend, err := engine.FrontendFromJSON(n.registry.GetRouter(), []byte(kv.Value))
+		frontend, err := engine.FrontendFromJSON(nil, []byte(kv.Value))
 		if err != nil {
 			return nil, err
 		}

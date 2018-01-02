@@ -14,7 +14,7 @@ import (
 	"xway/engine/etcd3"
 	"xway/middleware"
 	"xway/proxy"
-	"xway/router"
+	"xway/router/xrouter"
 )
 
 type Service struct {
@@ -57,7 +57,7 @@ func NewService(options Options) *Service {
 	}
 }
 
-func (s *Service) load() error {
+func (s *Service) initEngine() error {
 	// init engine
 	if s.options.EtcdApiVersion == 2 {
 		return errors.New("Unsupport etcdApiVersion=2")
@@ -68,23 +68,27 @@ func (s *Service) load() error {
 		return err
 	}
 	s.ng = ng
+
+	return nil
+}
+
+func (s *Service) initProxy() error {
+	// TODO: 初始化代理服务
+	// 加载路由匹配中间件
+	// 加载代理
+
+	// 获取快照
 	snp, err := s.ng.GetSnapshot()
 	if err != nil {
 		return err
 	}
-
-	fmt.Printf("loadNG GetSnapshot -> %#v\n", snp)
-
-	// TODO: 初始化服务
-	// 加载路由匹配中间件
-	// 加载代理
 
 	// negroni
 	n := negroni.New()
 	// context
 	n.UseFunc(xwaymw.DefaultXWayContext())
 	// router
-	n.Use(router.New())
+	n.Use(xrouter.New(snp))
 	// proxy
 	p, err := proxy.NewDo()
 	if err != nil {
@@ -93,6 +97,18 @@ func (s *Service) load() error {
 	n.UseHandlerFunc(p)
 	s.ngiSvc = n
 	s.ngiSvc.Run(":" + fmt.Sprint(s.options.Port))
+
+	return nil
+}
+
+func (s *Service) load() error {
+	if err := s.initEngine(); err != nil {
+		return err
+	}
+
+	if err := s.initProxy(); err != nil {
+		return err
+	}
 
 	return nil
 }

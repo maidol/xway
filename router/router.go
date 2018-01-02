@@ -1,47 +1,26 @@
 package router
 
 import (
-	"fmt"
 	"net/http"
-	"strings"
-
-	"github.com/urfave/negroni"
-
-	"xway/enum"
-	xerror "xway/error"
 )
 
 // Router ...
-type Router struct {
-}
+type Router interface {
+	// // Sets the not-found handler (this handler is called when no other handlers/routes in the routing library match
+	// SetNotFound(http.Handler) error
 
-func (rt *Router) ServeHTTP(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
-	// 处理路由匹配
-	fmt.Printf("-> url router for: %v, %v\n", r.Host, r.URL)
-	if !rt.IsValid(r.URL.Path) {
-		DefaultNotFound(rw, r)
-		return
-	}
-	next(rw, r)
-}
+	// // Gets the not-found handler that is currently in use by this router.
+	// GetNotFound() http.Handler
 
-// Handle ...
-func (rt *Router) Handle(string, http.Handler) error {
-	return nil
-}
+	// // Removes a route. The http.Handler associated with it, will be discarded.
+	// Remove(string) error
 
-// IsValid ...
-func (rt *Router) IsValid(path string) bool {
-	return strings.HasPrefix(path, "/gateway/")
-}
+	// Adds a new route->handler combination. The route is a string which provides the routing expression. http.Handler is called when this expression matches a request.
+	Handle(string, http.Handler) error
 
-// New ...
-func New() negroni.Handler {
-	return &Router{}
-}
+	// Validates whether this is an acceptable route expression
+	IsValid(string) bool
 
-// DefaultNotFound is an HTTP handler that returns simple 404 Not Found response.
-var DefaultNotFound = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	e := xerror.NewRequestError(enum.RetProxyError, enum.ECodeRouteNotFound, "代理路由异常")
-	e.Write(w)
-})
+	// ServiceHTTP is the http.Handler implementation that allows callers to route their calls to sub-http.Handlers based on route matches.
+	ServeHTTP(http.ResponseWriter, *http.Request)
+}
