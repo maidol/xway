@@ -12,15 +12,17 @@ const (
 )
 
 type rawFrontend struct {
-	Id        string
-	Route     string
-	Type      string
-	BackendId string
-	Settings  json.RawMessage
+	RouteId      string          `json:"routeId,omitempty"`
+	DomainHost   string          `json:"domainHost,omitempty"`
+	RouteUrl     string          `json:"routeUrl"`
+	RedirectHost string          `json:"redirectHost,omitempty"`
+	ForwardURL   string          `json:"forwardUrl,omitempty"`
+	Type         string          `json:"type,omitempty"`
+	Config       json.RawMessage `json:"config,omitempty"`
 }
 
-type HTTPFrontendSettings struct {
-	Hostname string
+type rawFrontends struct {
+	Frontends []json.RawMessage
 }
 
 func FrontendFromJSON(router router.Router, in []byte) (*Frontend, error) {
@@ -34,15 +36,33 @@ func FrontendFromJSON(router router.Router, in []byte) (*Frontend, error) {
 	}
 
 	var s HTTPFrontendSettings
-	if rf.Settings != nil {
-		if err := json.Unmarshal(rf.Settings, &s); err != nil {
+	if rf.Config != nil {
+		if err := json.Unmarshal(rf.Config, &s); err != nil {
 			return nil, fmt.Errorf("Invalid HTTPFrontendSettings json format: %v", err.Error())
 		}
 	}
 
-	f, err := NewHTTPFrontend(router, "", "", rf.Route, s)
+	f, err := NewHTTPFrontend(router, "", "", rf.RouteUrl, s)
 	if err != nil {
 		return nil, err
 	}
 	return f, nil
+}
+
+func FrontendsFromJSON(router router.Router, in []byte) ([]Frontend, error) {
+	var rfs *rawFrontends
+	if err := json.Unmarshal(in, &rfs); err != nil {
+		return nil, err
+	}
+
+	out := make([]Frontend, len(rfs.Frontends))
+	for i, raw := range rfs.Frontends {
+		f, err := FrontendFromJSON(router, raw)
+		if err != nil {
+			return nil, err
+		}
+		out[i] = *f
+	}
+
+	return out, nil
 }

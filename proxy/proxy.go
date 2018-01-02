@@ -40,6 +40,12 @@ func NewDo() (http.HandlerFunc, error) {
 
 		u, err := url.Parse("http://192.168.2.102:8708" + r.URL.String())
 		fmt.Printf("-> url forward to: %v, %v\n", u.Host, u)
+		// pool := xgrpool.Default()
+		// pool.JobQueue <- func() {
+		// 	fmt.Printf("-> url forward to: %v, %v\n", u.Host, u)
+		// 	fmt.Printf("-> url forward to: %v, %v\n", u.Host, u)
+		// }
+
 		if err != nil {
 			fmt.Printf("url.Parse err %v\n", err)
 			er := xerror.NewRequestError(xemun.RetProxyError, xemun.ECodeProxyFailed, err.Error())

@@ -6,14 +6,23 @@ import (
 	"os"
 
 	logrus_logstash "github.com/bshuster-repo/logrus-logstash-hook"
+	etcd "github.com/coreos/etcd/client"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/negroni"
 
+	en "xway/engine"
 	"xway/engine/etcd3"
 	"xway/middleware"
 	"xway/proxy"
 	"xway/router"
 )
+
+type Service struct {
+	client  etcd.Client
+	options Options
+	ng      en.Engine
+	ngiSvc  *negroni.Negroni
+}
 
 var appLogger *logrus.Entry
 
@@ -42,42 +51,29 @@ func init() {
 	appLogger = logger.WithFields(logrus.Fields{"name": "app"})
 }
 
-func loadNG(options Options) error {
+func NewService(options Options) *Service {
+	return &Service{
+		options: options,
+	}
+}
+
+func (s *Service) load() error {
 	// init engine
-	if options.EtcdApiVersion == 2 {
+	if s.options.EtcdApiVersion == 2 {
 		return errors.New("Unsupport etcdApiVersion=2")
 	}
 
-	ng, err := etcd3.New(options.EtcdNodes, options.EtcdKey, etcd3.Options{})
+	ng, err := etcd3.New(s.options.EtcdNodes, s.options.EtcdKey, etcd3.Options{})
+	if err != nil {
+		return err
+	}
+	s.ng = ng
+	snp, err := s.ng.GetSnapshot()
 	if err != nil {
 		return err
 	}
 
-	s, err := ng.GetSnapshot()
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("loadNG GetSnapshot %v\n", s)
-
-	return nil
-}
-
-func Run() error {
-	appLogger.Info("初始化......")
-
-	// 加载配置
-	options, err := ParseCommandLine()
-	if err != nil {
-		return fmt.Errorf("failed to parse command line: %s", err)
-	}
-	// fmt.Printf("options: %v\n", options)
-
-	if err := loadNG(options); err != nil {
-		return err
-	}
-
-	return nil
+	fmt.Printf("loadNG GetSnapshot -> %#v\n", snp)
 
 	// TODO: 初始化服务
 	// 加载路由匹配中间件
@@ -85,7 +81,6 @@ func Run() error {
 
 	// negroni
 	n := negroni.New()
-
 	// context
 	n.UseFunc(xwaymw.DefaultXWayContext())
 	// router
@@ -96,8 +91,26 @@ func Run() error {
 		return err
 	}
 	n.UseHandlerFunc(p)
+	s.ngiSvc = n
+	s.ngiSvc.Run(":" + fmt.Sprint(s.options.Port))
 
-	n.Run(":" + fmt.Sprint(options.Port))
+	return nil
+}
+
+// Run ...
+func Run() error {
+	// 加载配置
+	options, err := ParseCommandLine()
+	if err != nil {
+		return fmt.Errorf("failed to parse command line: %s", err)
+	}
+
+	appLogger.Info("初始化......")
+	// fmt.Printf("options: %v\n", options)
+	s := NewService(options)
+	if err := s.load(); err != nil {
+		return fmt.Errorf("service start failure: %s", err)
+	}
 
 	return nil
 }

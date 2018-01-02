@@ -9,29 +9,35 @@ type Snapshot struct {
 
 type FrontendSpec struct {
 	Frontend Frontend
+	// Middlewares []Middleware
 }
 
 type Frontend struct {
-	Id        string
-	Route     string
-	Type      string
-	BackendId string
+	// Id        string
+	// Route     string
+	// Type      string
+	// BackendId string
 
-	Settings interface{} `json:",omitempty"`
+	// Settings interface{} `json:"config,omitempty"`
 
-	RouteId      string `json:"routeId,omitempty"`
-	DomainHost   string `json:"domainHost,omitempty"`
-	RouteUrl     string `json:"routeUrl"`
-	RedirectHost string `json:"redirectHost,omitempty"`
-	ForwardURL   string `json:"forwardUrl,omitempty"`
-	// Type         string      `json:"type,omitempty"`
-	Config interface{} `json:"config,omitempty"`
+	RouteId      string      `json:"routeId,omitempty"`
+	DomainHost   string      `json:"domainHost,omitempty"`
+	RouteUrl     string      `json:"routeUrl"`
+	RedirectHost string      `json:"redirectHost,omitempty"`
+	ForwardURL   string      `json:"forwardUrl,omitempty"`
+	Type         string      `json:"type,omitempty"`
+	Config       interface{} `json:"config,omitempty"`
+}
+
+type HTTPFrontendSettings struct {
+	Hostname string
+	Auth     []string `json:"auth,omitempty"`
 }
 
 func NewHTTPFrontend(router router.Router, id, backendId string, routeExpr string, settings HTTPFrontendSettings) (*Frontend, error) {
 	return &Frontend{
 		Type:     HTTP,
-		Route:    routeExpr,
-		Settings: settings,
+		RouteUrl: routeExpr,
+		Config:   settings,
 	}, nil
 }

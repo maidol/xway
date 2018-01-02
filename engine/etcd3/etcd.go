@@ -2,7 +2,6 @@ package etcd3
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/coreos/etcd/mvcc/mvccpb"
@@ -77,13 +76,12 @@ func (n *ng) getEtcdClientConfig() etcd.Config {
 func (n *ng) parseFrontends(kvs []*mvccpb.KeyValue) ([]engine.FrontendSpec, error) {
 	frontendSpecs := []engine.FrontendSpec{}
 	for _, kv := range kvs {
-		fmt.Println("-> frontend kv", string(kv.Key), string(kv.Value))
-		// frontend.err:=engine.FrontendFromJSON(n.registry.GetRouter(), []byte[kv.Value])
+		// fmt.Println("-> frontend kv", string(kv.Key), string(kv.Value))
 		frontend, err := engine.FrontendFromJSON(router.Router{}, []byte(kv.Value))
 		if err != nil {
 			return nil, err
 		}
-		fmt.Println("-> frontend:", frontend)
+		// fmt.Println("-> frontend:", frontend)
 		frontendSpec := engine.FrontendSpec{
 			Frontend: *frontend,
 		}
@@ -116,4 +114,8 @@ func filterByPrefix(kvs []*mvccpb.KeyValue, prefix string) []*mvccpb.KeyValue {
 		}
 	}
 	return returnValue
+}
+
+func (n *ng) Subscribe(events chan interface{}, afterIdx uint64, cancel chan struct{}) error {
+	return nil
 }
