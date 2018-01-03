@@ -54,7 +54,7 @@ func (n *ng) reconnect() error {
 	n.cancelFunc = cancelFunc
 
 	if n.client != nil {
-		// 显式关闭
+		// 关闭
 		n.client.Close()
 	}
 

@@ -54,7 +54,7 @@ func (fs frontendSlice) Swap(i, j int) {
 
 func (fs frontendSlice) Less(i, j int) bool {
 	// 降序
-	return len(strings.Split(fs[j].RouteUrl, "/")) < len(strings.Split(fs[i].RouteUrl, "/"))
+	return len(strings.Split(strings.Trim(fs[j].RouteUrl, "/"), "/")) < len(strings.Split(strings.Trim(fs[i].RouteUrl, "/"), "/"))
 }
 
 // IsValid ...
