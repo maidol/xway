@@ -34,10 +34,14 @@ type HTTPFrontendSettings struct {
 	Auth     []string `json:"auth,omitempty"`
 }
 
-func NewHTTPFrontend(router router.Router, id, backendId string, routeExpr string, settings HTTPFrontendSettings) (*Frontend, error) {
+func NewHTTPFrontend(router router.Router, routeId, domainHost, redirectHost, forwardURL string, routeExpr string, settings HTTPFrontendSettings) (*Frontend, error) {
 	return &Frontend{
-		Type:     HTTP,
-		RouteUrl: routeExpr,
-		Config:   settings,
+		RouteId:      routeId,
+		DomainHost:   domainHost,
+		RedirectHost: redirectHost,
+		ForwardURL:   forwardURL,
+		Type:         HTTP,
+		RouteUrl:     routeExpr,
+		Config:       settings,
 	}, nil
 }

@@ -7,12 +7,14 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/vulcand/oxy/forward"
 	"github.com/vulcand/oxy/testutils"
 
 	"xway/context"
+	en "xway/engine"
 	xemun "xway/enum"
 	xerror "xway/error"
 )
@@ -35,11 +37,13 @@ func NewDo() (http.HandlerFunc, error) {
 
 	pr := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		xwayCtx := xwaycontext.DefaultXWayContext(r.Context())
-		if xwayCtx.UserName != "" {
-		}
+		matchRouteFrontend := xwayCtx.Map["matchRouteFrontend"].(*en.Frontend)
 
-		u, err := url.Parse("http://192.168.2.102:8708" + r.URL.String())
-		fmt.Printf("-> url forward to: %v, %v\n", u.Host, u)
+		// u, err := url.Parse("http://192.168.2.102:8708" + r.URL.String())
+		forwardURL := strings.Replace(r.URL.String(), "/gateway/", "/", 1)
+		forwardURL = strings.Replace(forwardURL, matchRouteFrontend.RouteUrl, matchRouteFrontend.ForwardURL, 1)
+		u, err := url.Parse("http://" + matchRouteFrontend.RedirectHost + forwardURL)
+		fmt.Printf("[MW:proxy] -> url forward to: %v, %v\n", u.Host, u)
 		// pool := xgrpool.Default()
 		// pool.JobQueue <- func() {
 		// 	fmt.Printf("-> url forward to: %v, %v\n", u.Host, u)

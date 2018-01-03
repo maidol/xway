@@ -69,6 +69,7 @@ func validateOptions(o Options) (Options, error) {
 	return o, nil
 }
 
+// ParseCommandLine ...
 func ParseCommandLine() (options Options, err error) {
 	flag.Var(&options.EtcdNodes, "etcd", "Etcd discovery service API endpoints")
 	flag.IntVar(&options.EtcdApiVersion, "etcdApiVer", 3, "Etcd Client API version (When 2, use Etcd 2.x API. All other values default to v3.x)")

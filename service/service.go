@@ -59,6 +59,10 @@ func NewService(options Options) *Service {
 
 func (s *Service) initEngine() error {
 	// init engine
+	if len(s.options.EtcdNodes) == 0 {
+		// 默认值
+		s.options.EtcdNodes.Set("http://localhost:2379")
+	}
 	if s.options.EtcdApiVersion == 2 {
 		return errors.New("Unsupport etcdApiVersion=2")
 	}
@@ -82,6 +86,7 @@ func (s *Service) initProxy() error {
 	if err != nil {
 		return err
 	}
+	// fmt.Printf("GetSnapshot -> %#v\n", snp)
 
 	// negroni
 	n := negroni.New()
@@ -115,14 +120,16 @@ func (s *Service) load() error {
 
 // Run ...
 func Run() error {
+	fmt.Println("Running......")
 	// 加载配置
 	options, err := ParseCommandLine()
 	if err != nil {
 		return fmt.Errorf("failed to parse command line: %s", err)
 	}
+	// fmt.Printf("加载配置options: %v\n", options)
+	// fmt.Println("初始化......")
 
-	appLogger.Info("初始化......")
-	// fmt.Printf("options: %v\n", options)
+	// appLogger.Info("Starting......")
 	s := NewService(options)
 	if err := s.load(); err != nil {
 		return fmt.Errorf("service start failure: %s", err)

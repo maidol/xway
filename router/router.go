@@ -19,8 +19,10 @@ type Router interface {
 	Handle(string, http.Handler) error
 
 	// Validates whether this is an acceptable route expression
-	IsValid(string) bool
+	IsValid(*http.Request) (bool, interface{})
 
 	// ServiceHTTP is the http.Handler implementation that allows callers to route their calls to sub-http.Handlers based on route matches.
-	ServeHTTP(http.ResponseWriter, *http.Request)
+	// ServeHTTP(http.ResponseWriter, *http.Request)
+
+	ServeHTTP(http.ResponseWriter, *http.Request, http.HandlerFunc)
 }

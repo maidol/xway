@@ -32,7 +32,7 @@ func FrontendFromJSON(router router.Router, in []byte) (*Frontend, error) {
 	}
 
 	if rf.Type != HTTP {
-		return nil, fmt.Errorf("Unsupported fronted type: %v", rf.Type)
+		return nil, fmt.Errorf("Unsupported frontend type: %v", rf.Type)
 	}
 
 	var s HTTPFrontendSettings
@@ -42,7 +42,7 @@ func FrontendFromJSON(router router.Router, in []byte) (*Frontend, error) {
 		}
 	}
 
-	f, err := NewHTTPFrontend(router, "", "", rf.RouteUrl, s)
+	f, err := NewHTTPFrontend(router, rf.RouteId, rf.DomainHost, rf.RedirectHost, rf.ForwardURL, rf.RouteUrl, s)
 	if err != nil {
 		return nil, err
 	}
