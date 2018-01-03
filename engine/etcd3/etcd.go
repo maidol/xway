@@ -2,6 +2,7 @@ package etcd3
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/coreos/etcd/mvcc/mvccpb"
@@ -116,6 +117,64 @@ func filterByPrefix(kvs []*mvccpb.KeyValue, prefix string) []*mvccpb.KeyValue {
 	return returnValue
 }
 
-func (n *ng) Subscribe(events chan interface{}, afterIdx uint64, cancel chan struct{}) error {
+func (n *ng) Subscribe(changes chan interface{}, afterIdx uint64, cancelC chan struct{}) error {
+	watcher := etcd.NewWatcher(n.client)
+	defer watcher.Close()
+	rch := watcher.Watch(n.context, n.etcdKey+"/", etcd.WithPrefix())
+	for wresp := range rch {
+		if wresp.Canceled {
+			fmt.Println("Stop watching: graceful shutdown")
+			return nil
+		}
+		if err := wresp.Err(); err != nil {
+			fmt.Printf("Stop watching: error: %v\n", err)
+			return err
+		}
+
+		for _, ev := range wresp.Events {
+			// fmt.Printf("n.client.Watch %s %q : %q\n", ev.Type, ev.Kv.Key, ev.Kv.Value)
+			change, err := n.parseChange(ev)
+			if err != nil {
+				continue
+			}
+			if change != nil {
+				fmt.Printf("ng.Subscribe chagne %v\n", change)
+				select {
+				case changes <- change:
+				case <-cancelC:
+					return nil
+				}
+			}
+		}
+	}
 	return nil
+}
+
+type MatcherFn func(*etcd.Event) (interface{}, error)
+
+func (n *ng) parseChange(e *etcd.Event) (interface{}, error) {
+	matchers := []MatcherFn{
+		n.parseFrontendChange,
+	}
+	for _, matcher := range matchers {
+		m, err := matcher(e)
+		if m != nil || err != nil {
+			return m, err
+		}
+	}
+	return nil, nil
+}
+
+func (n *ng) parseFrontendChange(e *etcd.Event) (interface{}, error) {
+	switch e.Type {
+	case etcd.EventTypePut:
+		frontend, err := engine.FrontendFromJSON(nil, e.Kv.Value)
+		if err != nil {
+			return e, err
+		}
+		return frontend, nil
+	case etcd.EventTypeDelete:
+		return e, nil
+	}
+	return nil, nil
 }

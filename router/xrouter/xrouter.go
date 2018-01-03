@@ -36,8 +36,15 @@ func (rt *Router) ServeHTTP(rw http.ResponseWriter, r *http.Request, next http.H
 	next(rw, r)
 }
 
+func (rt *Router) Remove(f interface{}) error {
+	fmt.Printf("remove frontend %v\n", f)
+	return nil
+}
+
 // Handle ...
-func (rt *Router) Handle(string, http.Handler) error {
+func (rt *Router) Handle(f interface{}) error {
+	// TODO: add/update
+	fmt.Printf("add/update frontend %v\n", f)
 	return nil
 }
 
@@ -58,7 +65,7 @@ func (fs frontendSlice) Less(i, j int) bool {
 }
 
 // IsValid ...
-func (rt *Router) IsValid(r *http.Request) (bool, *en.Frontend) {
+func (rt *Router) IsValid(r *http.Request) (bool, interface{}) {
 	if !strings.HasPrefix(r.URL.Path, "/gateway/") {
 		return false, nil
 	}

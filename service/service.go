@@ -14,6 +14,7 @@ import (
 	"xway/engine/etcd3"
 	"xway/middleware"
 	"xway/proxy"
+	"xway/router"
 	"xway/router/xrouter"
 )
 
@@ -22,6 +23,7 @@ type Service struct {
 	options Options
 	ng      en.Engine
 	ngiSvc  *negroni.Negroni
+	router  router.Router
 }
 
 var appLogger *logrus.Entry
@@ -73,6 +75,16 @@ func (s *Service) initEngine() error {
 	}
 	s.ng = ng
 
+	changes := make(chan interface{})
+	cancelC := make(chan struct{})
+	go s.ng.Subscribe(changes, 0, cancelC)
+	go func() {
+		for change := range changes {
+			// fmt.Printf("/xway/ change %v\n", change)
+			s.router.Handle(change)
+		}
+	}()
+
 	return nil
 }
 
@@ -93,7 +105,9 @@ func (s *Service) initProxy() error {
 	// context
 	n.UseFunc(xwaymw.DefaultXWayContext())
 	// router
-	n.Use(xrouter.New(snp))
+	r := xrouter.New(snp)
+	s.router = r.(router.Router)
+	n.Use(r)
 	// proxy
 	p, err := proxy.NewDo()
 	if err != nil {
