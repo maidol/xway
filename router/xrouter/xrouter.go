@@ -17,7 +17,8 @@ import (
 // Router ...
 type Router struct {
 	// snp       *en.Snapshot
-	frontends []en.Frontend
+	frontendMap map[string]*en.Frontend
+	frontends   []*en.Frontend
 }
 
 func (rt *Router) ServeHTTP(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
@@ -36,15 +37,32 @@ func (rt *Router) ServeHTTP(rw http.ResponseWriter, r *http.Request, next http.H
 	next(rw, r)
 }
 
+// Remove ...
 func (rt *Router) Remove(f interface{}) error {
-	fmt.Printf("remove frontend %v\n", f)
+	var frontends []*en.Frontend
+	fr := f.(*en.Frontend)
+	fmt.Printf("remove frontend %v\n", fr)
+	delete(rt.frontendMap, fr.RouteId)
+	for _, v := range rt.frontendMap {
+		fmt.Printf("%v\n", v)
+		frontends = append(frontends, v)
+	}
+	rt.frontends = frontends
 	return nil
 }
 
 // Handle ...
 func (rt *Router) Handle(f interface{}) error {
 	// TODO: add/update
-	fmt.Printf("add/update frontend %v\n", f)
+	var frontends []*en.Frontend
+	fr := f.(*en.Frontend)
+	fmt.Printf("add/update frontend %v\n", fr)
+	rt.frontendMap[fr.RouteId] = fr
+	for _, v := range rt.frontendMap {
+		fmt.Printf("%v\n", v)
+		frontends = append(frontends, v)
+	}
+	rt.frontends = frontends
 	return nil
 }
 
@@ -75,7 +93,7 @@ func (rt *Router) IsValid(r *http.Request) (bool, interface{}) {
 	// TODO: 优化匹配逻辑
 	for _, v := range rt.frontends {
 		if v.DomainHost == r.Host && strings.HasPrefix(forwardURL, v.RouteUrl) {
-			matchers = append(matchers, v)
+			matchers = append(matchers, *v)
 		}
 	}
 
@@ -94,13 +112,17 @@ func (rt *Router) IsValid(r *http.Request) (bool, interface{}) {
 
 // New ...
 func New(snp *en.Snapshot) negroni.Handler {
-	var frontends []en.Frontend
+	var frontends []*en.Frontend
+	frontendMap := make(map[string]*en.Frontend)
 	for _, v := range snp.FrontendSpecs {
-		frontends = append(frontends, v.Frontend)
+		f := v.Frontend
+		frontends = append(frontends, &f)
+		frontendMap[v.Frontend.RouteId] = &f
 	}
 	return &Router{
 		// snp:       snp,
-		frontends: frontends,
+		frontendMap: frontendMap,
+		frontends:   frontends,
 	}
 }
 
