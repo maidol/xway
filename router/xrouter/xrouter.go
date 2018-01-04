@@ -19,6 +19,7 @@ type Router struct {
 	// snp       *en.Snapshot
 	frontendMap map[string]*en.Frontend
 	frontends   []*en.Frontend
+	// frontendMapTemp map[string]*en.Frontend
 }
 
 func (rt *Router) ServeHTTP(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
@@ -40,9 +41,9 @@ func (rt *Router) ServeHTTP(rw http.ResponseWriter, r *http.Request, next http.H
 // Remove ...
 func (rt *Router) Remove(f interface{}) error {
 	var frontends []*en.Frontend
-	fr := f.(*en.Frontend)
-	fmt.Printf("remove frontend %v\n", fr)
-	delete(rt.frontendMap, fr.RouteId)
+	rid := f.(string)
+	fmt.Printf("[xrouter.Remove] frontend %v\n", rid)
+	delete(rt.frontendMap, rid)
 	for _, v := range rt.frontendMap {
 		fmt.Printf("%v\n", v)
 		frontends = append(frontends, v)
@@ -55,9 +56,9 @@ func (rt *Router) Remove(f interface{}) error {
 func (rt *Router) Handle(f interface{}) error {
 	// TODO: add/update
 	var frontends []*en.Frontend
-	fr := f.(*en.Frontend)
-	fmt.Printf("add/update frontend %v\n", fr)
-	rt.frontendMap[fr.RouteId] = fr
+	fr := f.(en.Frontend)
+	fmt.Printf("[xrouter.Handle] frontend %v\n", fr)
+	rt.frontendMap[fr.RouteId] = &fr
 	for _, v := range rt.frontendMap {
 		fmt.Printf("%v\n", v)
 		frontends = append(frontends, v)
@@ -88,11 +89,18 @@ func (rt *Router) IsValid(r *http.Request) (bool, interface{}) {
 		return false, nil
 	}
 
+	xwayCtx := xwaycontext.DefaultXWayContext(r.Context())
+
 	forwardURL := strings.Replace(r.URL.Path, "/gateway/", "/", 1)
+	forwardURL = strings.ToLower(strings.TrimRight(forwardURL, "/"))
+	xwayCtx.Map["forwardURL"] = forwardURL // 传递的forwardURL末尾不带"/"
+
+	forwardURL += "/"
 	var matchers []en.Frontend
 	// TODO: 优化匹配逻辑
 	for _, v := range rt.frontends {
-		if v.DomainHost == r.Host && strings.HasPrefix(forwardURL, v.RouteUrl) {
+		rurl := strings.ToLower(strings.TrimRight(v.RouteUrl, "/")) + "/"
+		if v.DomainHost == r.Host && strings.HasPrefix(forwardURL, rurl) {
 			matchers = append(matchers, *v)
 		}
 	}
@@ -101,10 +109,10 @@ func (rt *Router) IsValid(r *http.Request) (bool, interface{}) {
 		return false, nil
 	}
 
+	// TODO: 优化, 整个路由表的排序可放在路由初始化时
 	sort.Sort(frontendSlice(matchers))
+	// fmt.Printf("matchers %v\n", matchers)
 	res := matchers[0]
-
-	xwayCtx := xwaycontext.DefaultXWayContext(r.Context())
 	xwayCtx.Map["matchRouteFrontend"] = &res
 
 	return true, &res

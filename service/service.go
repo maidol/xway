@@ -75,21 +75,23 @@ func (s *Service) initEngine() error {
 	}
 	s.ng = ng
 
-	changes := make(chan interface{})
-	cancelC := make(chan struct{})
-	go s.ng.Subscribe(changes, 0, cancelC)
-	go func() {
-		for change := range changes {
-			// fmt.Printf("/xway/ change %v\n", change)
-			s.router.Handle(change)
-		}
-	}()
-
 	return nil
+}
+
+func (s *Service) processChange(ch interface{}) error {
+	switch change := ch.(type) {
+	case *en.FrontendUpserted:
+		return s.router.Handle(change.Frontend)
+
+	case *en.FrontendDeleted:
+		return s.router.Remove(change.FrontendKey.Id)
+	}
+	return fmt.Errorf("unsupported change: %v", ch)
 }
 
 func (s *Service) initProxy() error {
 	// TODO: 初始化代理服务
+	// 获取快照
 	// 加载路由匹配中间件
 	// 加载代理
 
@@ -99,6 +101,15 @@ func (s *Service) initProxy() error {
 		return err
 	}
 	// fmt.Printf("GetSnapshot -> %#v\n", snp)
+	changes := make(chan interface{})
+	cancelC := make(chan struct{})
+	go s.ng.Subscribe(changes, snp.Index, cancelC)
+	go func() {
+		for change := range changes {
+			// fmt.Printf("/xway/ change %v\n", change)
+			s.processChange(change)
+		}
+	}()
 
 	// negroni
 	n := negroni.New()

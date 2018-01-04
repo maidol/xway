@@ -40,8 +40,8 @@ func NewDo() (http.HandlerFunc, error) {
 
 		xwayCtx := xwaycontext.DefaultXWayContext(r.Context())
 		matchRouteFrontend := xwayCtx.Map["matchRouteFrontend"].(*en.Frontend)
-		forwardURL := strings.Replace(r.URL.String(), "/gateway/", "/", 1)
-		forwardURL = strings.Replace(forwardURL, matchRouteFrontend.RouteUrl, matchRouteFrontend.ForwardURL, 1)
+		forwardURL := xwayCtx.Map["forwardURL"].(string)
+		forwardURL = strings.Replace(forwardURL, strings.ToLower(strings.TrimRight(matchRouteFrontend.RouteUrl, "/")), strings.ToLower(strings.TrimRight(matchRouteFrontend.ForwardURL, "/")), 1)
 		u, err := url.Parse("http://" + matchRouteFrontend.RedirectHost + forwardURL)
 
 		fmt.Printf("[MW:proxy] -> url forward to: %v, %v\n", u.Host, u)

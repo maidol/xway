@@ -3,6 +3,7 @@ package etcd3
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/coreos/etcd/mvcc/mvccpb"
@@ -138,7 +139,7 @@ func (n *ng) Subscribe(changes chan interface{}, afterIdx uint64, cancelC chan s
 				continue
 			}
 			if change != nil {
-				fmt.Printf("ng.Subscribe chagne %v\n", change)
+				fmt.Printf("[ng.Subscribe] chagne %v\n", change)
 				select {
 				case changes <- change:
 				case <-cancelC:
@@ -172,9 +173,15 @@ func (n *ng) parseFrontendChange(e *etcd.Event) (interface{}, error) {
 		if err != nil {
 			return e, err
 		}
-		return frontend, nil
+		return &engine.FrontendUpserted{
+			Frontend: *frontend,
+		}, nil
 	case etcd.EventTypeDelete:
-		return e, nil
+		frontendIdRegex := regexp.MustCompile("/frontends/([^/]+)(?:/frontend)?$")
+		fids := frontendIdRegex.FindStringSubmatch(string(e.Kv.Key))
+		return &engine.FrontendDeleted{
+			FrontendKey: engine.FrontendKey{Id: fids[1]},
+		}, nil
 	}
-	return nil, nil
+	return nil, fmt.Errorf("unsupported action on the frontend: %v %v", e.Kv.Key, e.Type)
 }
