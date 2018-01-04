@@ -66,7 +66,7 @@ func (rt *Router) Remove(f interface{}) error {
 	return nil
 }
 
-// Handle ...
+// Handle add/update
 func (rt *Router) Handle(f interface{}) error {
 	// add/update
 	var frontends []*en.Frontend
@@ -111,7 +111,7 @@ func (fs frontendSlice) Less(i, j int) bool {
 	return len(strings.Split(strings.Trim(fs[j].RouteUrl, "/"), "/")) < len(strings.Split(strings.Trim(fs[i].RouteUrl, "/"), "/"))
 }
 
-// IsValid ...
+// IsValid 验证路由匹配
 func (rt *Router) IsValid(r *http.Request) (bool, interface{}) {
 	if !strings.HasPrefix(r.URL.Path, "/gateway/") {
 		return false, nil

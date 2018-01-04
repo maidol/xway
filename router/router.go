@@ -10,7 +10,7 @@ type Router interface {
 	// Removes a route
 	Remove(interface{}) error
 
-	// Adds a new route
+	// Add/update a route
 	Handle(interface{}) error
 
 	// Validates whether this is an acceptable route expression
