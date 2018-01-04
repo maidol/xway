@@ -41,28 +41,56 @@ func (rt *Router) ServeHTTP(rw http.ResponseWriter, r *http.Request, next http.H
 // Remove ...
 func (rt *Router) Remove(f interface{}) error {
 	var frontends []*en.Frontend
+	var frontendsTemp []en.Frontend
 	rid := f.(string)
 	fmt.Printf("[xrouter.Remove] frontend %v\n", rid)
 	delete(rt.frontendMap, rid)
+
+	// 重新排序(重载路由表)
 	for _, v := range rt.frontendMap {
-		fmt.Printf("%v\n", v)
-		frontends = append(frontends, v)
+		frontendsTemp = append(frontendsTemp, *v)
 	}
+	sort.Sort(frontendSlice(frontendsTemp))
+
+	fmt.Printf("[重新加载路由表......]\n")
+	for _, v := range frontendsTemp {
+		fmt.Printf("[加载路由] %v\n", v)
+		// 变量v在第一次定义时, 地址是确定的(默认不变) fmt.Printf("%p %v\n", &v, &v)
+		// 防止每次传递变量地址(&v)一样导致的bug, 需赋值f:=v
+		// append(frontends, &v) => append(frontends, &f)
+		f := v
+		frontends = append(frontends, &f)
+	}
+
 	rt.frontends = frontends
 	return nil
 }
 
 // Handle ...
 func (rt *Router) Handle(f interface{}) error {
-	// TODO: add/update
+	// add/update
 	var frontends []*en.Frontend
+	var frontendsTemp []en.Frontend
 	fr := f.(en.Frontend)
 	fmt.Printf("[xrouter.Handle] frontend %v\n", fr)
 	rt.frontendMap[fr.RouteId] = &fr
+
+	// 重新排序(重载路由表)
 	for _, v := range rt.frontendMap {
-		fmt.Printf("%v\n", v)
-		frontends = append(frontends, v)
+		frontendsTemp = append(frontendsTemp, *v)
 	}
+	sort.Sort(frontendSlice(frontendsTemp))
+
+	fmt.Printf("[重新加载路由表......]\n")
+	for _, v := range frontendsTemp {
+		fmt.Printf("[加载路由] %v\n", v)
+		// 变量v在第一次定义时, 地址是确定的(默认不变) fmt.Printf("%p %v\n", &v, &v)
+		// 防止每次传递变量地址(&v)一样导致的bug, 需赋值f:=v
+		// append(frontends, &v) => append(frontends, &f)
+		f := v
+		frontends = append(frontends, &f)
+	}
+
 	rt.frontends = frontends
 	return nil
 }
@@ -97,11 +125,12 @@ func (rt *Router) IsValid(r *http.Request) (bool, interface{}) {
 
 	forwardURL += "/"
 	var matchers []en.Frontend
-	// TODO: 优化匹配逻辑
+	// 优化匹配逻辑
 	for _, v := range rt.frontends {
 		rurl := strings.ToLower(strings.TrimRight(v.RouteUrl, "/")) + "/"
 		if v.DomainHost == r.Host && strings.HasPrefix(forwardURL, rurl) {
 			matchers = append(matchers, *v)
+			break // 路由表已经在初始化和重载时预先做了排序("/"分割的字符串数组长度降序), 第一条匹配到的路由已是最优
 		}
 	}
 
@@ -109,8 +138,8 @@ func (rt *Router) IsValid(r *http.Request) (bool, interface{}) {
 		return false, nil
 	}
 
-	// TODO: 优化, 整个路由表的排序可放在路由初始化时
-	sort.Sort(frontendSlice(matchers))
+	// 优化, 整个路由表的优化排序放在路由初始化/重载时
+	// sort.Sort(frontendSlice(matchers))
 	// fmt.Printf("matchers %v\n", matchers)
 	res := matchers[0]
 	xwayCtx.Map["matchRouteFrontend"] = &res
@@ -121,11 +150,25 @@ func (rt *Router) IsValid(r *http.Request) (bool, interface{}) {
 // New ...
 func New(snp *en.Snapshot) negroni.Handler {
 	var frontends []*en.Frontend
+	var frontendsTemp []en.Frontend
 	frontendMap := make(map[string]*en.Frontend)
+
+	// 排序
 	for _, v := range snp.FrontendSpecs {
 		f := v.Frontend
+		frontendsTemp = append(frontendsTemp, f)
+	}
+	sort.Sort(frontendSlice(frontendsTemp))
+
+	fmt.Printf("[加载路由表......]\n")
+	for _, v := range frontendsTemp {
+		fmt.Printf("[加载路由] %v\n", v)
+		// 变量v在第一次定义时, 地址是确定的(默认不变) fmt.Printf("%p %v\n", &v, &v)
+		// 防止每次传递变量地址(&v)一样导致的bug, 需赋值f:=v
+		// append(frontends, &v) => append(frontends, &f)
+		f := v
 		frontends = append(frontends, &f)
-		frontendMap[v.Frontend.RouteId] = &f
+		frontendMap[f.RouteId] = &f
 	}
 	return &Router{
 		// snp:       snp,

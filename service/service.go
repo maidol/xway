@@ -101,6 +101,7 @@ func (s *Service) initProxy() error {
 		return err
 	}
 	// fmt.Printf("GetSnapshot -> %#v\n", snp)
+	// TODO: 需要处理发生错误时, goruntine退出
 	changes := make(chan interface{})
 	cancelC := make(chan struct{})
 	go s.ng.Subscribe(changes, snp.Index, cancelC)
