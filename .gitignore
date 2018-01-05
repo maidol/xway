@@ -5,3 +5,4 @@ flymake_*
 *.exe
 tmp
 debug
+app

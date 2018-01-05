@@ -38,4 +38,4 @@
 
 [[constraint]]
   name = "github.com/coreos/etcd"
-  version="v3.2.13"
+  version = "3.2.13"
