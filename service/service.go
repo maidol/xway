@@ -102,7 +102,7 @@ func (s *Service) processChange(ch interface{}) error {
 func (s *Service) initProxy() error {
 	// TODO: 初始化代理服务
 	// 1. 获取快照/启动goroutine监听router等信息的变化
-	// 2. 加载路由匹配中间件/加载代理/启动服务
+	// 2. 加载路由匹配中间件/加载代理服务
 	// 初始化代理失败需要安全退出所有goroutine和关闭channel
 	// 3. 启动goroutine处理router等信息的变化
 
@@ -130,7 +130,7 @@ func (s *Service) initProxy() error {
 		// s.watcherCancelC <- struct{}{}
 		fmt.Println("[engine.Subscribe] watcher shutdown")
 	}()
-	// 启动服务失败时需要等待对router进行监听的goroutine完全退出才能退出initProxy
+	// 初始化代理服务失败时需要等待对router进行监听的goroutine完全退出才能退出initProxy
 	// Make sure watcher goroutine [close(changes)] is stopped if initialization fails.
 	defer func() {
 		if cancelWatcher {
@@ -139,7 +139,7 @@ func (s *Service) initProxy() error {
 		}
 	}()
 
-	// 加载路由匹配中间件/加载代理/启动服务
+	// 加载路由匹配中间件/加载代理服务
 	// negroni
 	n := negroni.New()
 	// context
@@ -155,9 +155,8 @@ func (s *Service) initProxy() error {
 	}
 	n.UseHandlerFunc(p)
 	s.ngiSvc = n
-	s.ngiSvc.Run(":" + fmt.Sprint(s.options.Port))
 
-	// 服务启动成功, cancelWatcher置为false
+	// 服务初始化后, cancelWatcher置为false
 	// server has been successfully started therefore we do not need
 	// to cancel the watcher.
 	cancelWatcher = false
@@ -176,6 +175,7 @@ func (s *Service) initProxy() error {
 		}
 		fmt.Println("change processor shutdown")
 	}()
+
 	return nil
 }
 
@@ -187,7 +187,6 @@ func (s *Service) load() error {
 	if err := s.initProxy(); err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -207,6 +206,7 @@ func Run() error {
 	if err := s.load(); err != nil {
 		return fmt.Errorf("service start failure: %s", err)
 	}
-
+	// start server
+	s.ngiSvc.Run(":" + fmt.Sprint(s.options.Port))
 	return nil
 }
