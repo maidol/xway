@@ -26,7 +26,7 @@
 
 [[constraint]]
   name = "github.com/sirupsen/logrus"
-  version = "1.0.4"
+  version = "v1.0.4"
 
 [[constraint]]
   name = "github.com/urfave/negroni"
@@ -35,3 +35,7 @@
 [[constraint]]
   branch = "master"
   name = "github.com/vulcand/oxy"
+
+[[constraint]]
+  name = "github.com/coreos/etcd"
+  version="v3.2.13"
