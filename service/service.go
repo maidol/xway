@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sync"
+	"time"
 
 	logrus_logstash "github.com/bshuster-repo/logrus-logstash-hook"
 	etcd "github.com/coreos/etcd/client"
@@ -18,12 +20,20 @@ import (
 	"xway/router/xrouter"
 )
 
+const (
+	retryPeriod       = 5 * time.Second
+	changesBufferSize = 2000
+)
+
 type Service struct {
-	client  etcd.Client
-	options Options
-	ng      en.Engine
-	ngiSvc  *negroni.Negroni
-	router  router.Router
+	client         etcd.Client
+	options        Options
+	ng             en.Engine
+	ngiSvc         *negroni.Negroni
+	router         router.Router
+	watcherCancelC chan struct{}
+	watcherErrorC  chan struct{}
+	watcherWg      sync.WaitGroup
 }
 
 var appLogger *logrus.Entry
@@ -91,27 +101,45 @@ func (s *Service) processChange(ch interface{}) error {
 
 func (s *Service) initProxy() error {
 	// TODO: 初始化代理服务
-	// 获取快照
-	// 加载路由匹配中间件
-	// 加载代理
+	// 1. 获取快照/启动goroutine监听router等信息的变化
+	// 2. 加载路由匹配中间件/加载代理/启动服务
+	// 初始化代理失败需要安全退出所有goroutine和关闭channel
+	// 3. 启动goroutine处理router等信息的变化
 
-	// 获取快照
+	// 获取快照/监听router等信息的变化
 	snp, err := s.ng.GetSnapshot()
 	if err != nil {
 		return err
 	}
 	// fmt.Printf("GetSnapshot -> %#v\n", snp)
 	// TODO: 需要处理发生错误时, goroutine退出
-	changes := make(chan interface{})
-	cancelC := make(chan struct{})
-	go s.ng.Subscribe(changes, snp.Index, cancelC)
+	cancelWatcher := true // 标记是否取消监听router等信息的变化
+	changes := make(chan interface{}, changesBufferSize)
+	s.watcherCancelC = make(chan struct{})
+	s.watcherErrorC = make(chan struct{})
+	// s.watcherWg关联开启的goroutine
+	s.watcherWg.Add(1)
 	go func() {
-		for change := range changes {
-			// fmt.Printf("/xway/ change %v\n", change)
-			s.processChange(change)
+		defer s.watcherWg.Done() // 执行顺序 2
+		defer close(changes)     // 执行顺序 1
+		if err := s.ng.Subscribe(changes, snp.Index, s.watcherCancelC); err != nil {
+			fmt.Printf("[engine.Subscribe] watcher failed: '%v'\n", err)
+			s.watcherErrorC <- struct{}{}
+			return
+		}
+		// s.watcherCancelC <- struct{}{}
+		fmt.Println("[engine.Subscribe] watcher shutdown")
+	}()
+	// 启动服务失败时需要等待对router进行监听的goroutine完全退出才能退出initProxy
+	// Make sure watcher goroutine [close(changes)] is stopped if initialization fails.
+	defer func() {
+		if cancelWatcher {
+			close(s.watcherCancelC)
+			s.watcherWg.Wait() // 阻塞并等待所有goroutine退出
 		}
 	}()
 
+	// 加载路由匹配中间件/加载代理/启动服务
 	// negroni
 	n := negroni.New()
 	// context
@@ -129,6 +157,25 @@ func (s *Service) initProxy() error {
 	s.ngiSvc = n
 	s.ngiSvc.Run(":" + fmt.Sprint(s.options.Port))
 
+	// 服务启动成功, cancelWatcher置为false
+	// server has been successfully started therefore we do not need
+	// to cancel the watcher.
+	cancelWatcher = false
+
+	// 处理router等信息的变化
+	// This goroutine will listen for changes arriving to the changes channel
+	// and reconfigure the given server router.
+	s.watcherWg.Add(1)
+	go func() {
+		defer s.watcherWg.Done()
+		for change := range changes {
+			// fmt.Printf("/xway/ change %v\n", change)
+			if err := s.processChange(change); err != nil {
+				fmt.Printf("failed to process, change=%#v, err=%s\n", change, err)
+			}
+		}
+		fmt.Println("change processor shutdown")
+	}()
 	return nil
 }
 
