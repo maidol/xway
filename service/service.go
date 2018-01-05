@@ -192,7 +192,7 @@ func (s *Service) load() error {
 
 // Run ...
 func Run() error {
-	fmt.Println("Running......")
+	fmt.Println("[Running......]")
 	// 加载配置
 	options, err := ParseCommandLine()
 	if err != nil {
