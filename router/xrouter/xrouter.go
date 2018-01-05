@@ -19,7 +19,6 @@ type Router struct {
 	// snp       *en.Snapshot
 	frontendMap map[string]*en.Frontend
 	frontends   []*en.Frontend
-	// frontendMapTemp map[string]*en.Frontend
 }
 
 func (rt *Router) ServeHTTP(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {

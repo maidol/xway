@@ -43,7 +43,7 @@ func NewDo() (http.HandlerFunc, error) {
 		forwardURL := xwayCtx.Map["forwardURL"].(string)
 		forwardURL = strings.Replace(forwardURL, strings.ToLower(strings.TrimRight(matchRouteFrontend.RouteUrl, "/")), strings.ToLower(strings.TrimRight(matchRouteFrontend.ForwardURL, "/")), 1)
 		u, err := url.Parse("http://" + matchRouteFrontend.RedirectHost + forwardURL + "?" + r.URL.RawQuery)
-		fmt.Println(forwardURL)
+
 		fmt.Printf("[MW:proxy] -> url forward to: %v, %v\n", u.Host, u)
 		// TODO: 优化, 异步日志
 		// pool := xgrpool.Default()
@@ -53,7 +53,7 @@ func NewDo() (http.HandlerFunc, error) {
 		// }
 
 		if err != nil {
-			fmt.Printf("url.Parse err %v\n", err)
+			fmt.Printf("[MW:proxy] url.Parse err: %v\n", err)
 			er := xerror.NewRequestError(xemun.RetProxyError, xemun.ECodeProxyFailed, err.Error())
 			er.Write(w)
 			return
@@ -74,7 +74,7 @@ func NewDo() (http.HandlerFunc, error) {
 
 		resp, err := client.Do(outReq)
 		if err != nil {
-			fmt.Printf("client.Do err %v\n", err)
+			fmt.Printf("[MW:proxy] client.Do err: %v\n", err)
 			er := xerror.NewRequestError(xemun.RetProxyError, xemun.ECodeProxyFailed, err.Error())
 			er.Write(w)
 			return
@@ -83,7 +83,7 @@ func NewDo() (http.HandlerFunc, error) {
 
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			fmt.Printf("ioutil.ReadAll %v\n", err)
+			fmt.Printf("[MW:proxy] ioutil.ReadAll err: %v\n", err)
 			er := xerror.NewRequestError(xemun.RetProxyError, xemun.ECodeInternal, err.Error())
 			er.Write(w)
 			return
