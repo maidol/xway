@@ -118,17 +118,22 @@ func filterByPrefix(kvs []*mvccpb.KeyValue, prefix string) []*mvccpb.KeyValue {
 	return returnValue
 }
 
+func eventToString(e *etcd.Event) string {
+	return fmt.Sprintf("%s: %v -> %v", e.Type, e.PrevKv, e.Kv)
+}
+
 func (n *ng) Subscribe(changes chan interface{}, afterIdx uint64, cancelC chan struct{}) error {
 	watcher := etcd.NewWatcher(n.client)
 	defer watcher.Close()
+	fmt.Printf("[ng.Subscribe] Begin watching: etcd revision %d\n", afterIdx)
 	rch := watcher.Watch(n.context, n.etcdKey+"/", etcd.WithRev(int64(afterIdx)), etcd.WithPrefix())
 	for wresp := range rch {
 		if wresp.Canceled {
-			fmt.Println("Stop watching: graceful shutdown")
+			fmt.Println("[ng.Subscribe] Stop watching: graceful shutdown")
 			return nil
 		}
 		if err := wresp.Err(); err != nil {
-			fmt.Printf("Stop watching: error: %v\n", err)
+			fmt.Printf("[ng.Subscribe] Stop watching: error: %v\n", err)
 			return err
 		}
 
@@ -136,6 +141,7 @@ func (n *ng) Subscribe(changes chan interface{}, afterIdx uint64, cancelC chan s
 			// fmt.Printf("n.client.Watch %s %q : %q\n", ev.Type, ev.Kv.Key, ev.Kv.Value)
 			change, err := n.parseChange(ev)
 			if err != nil {
+				fmt.Printf("[ng.Subscribe] Ignore '%s', error: %s\n", eventToString(ev), err)
 				continue
 			}
 			if change != nil {
