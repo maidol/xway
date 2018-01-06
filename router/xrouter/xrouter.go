@@ -126,6 +126,7 @@ func (rt *Router) IsValid(r *http.Request) (bool, interface{}) {
 	var matchers []en.Frontend
 	// 优化匹配逻辑
 	for _, v := range rt.frontends {
+		// forwardURL和v.RouteUrl末尾必须带"/"进行匹配, 若不带"/", /v5/userinfo/create 会匹配到 /v5/user, /v5/useri, /v5/userin, ... , /v5/userinfo, /v5/userinfo/create, /v5/userinfo/created, ...
 		rurl := strings.ToLower(strings.TrimRight(v.RouteUrl, "/")) + "/"
 		if v.DomainHost == r.Host && strings.HasPrefix(forwardURL, rurl) {
 			matchers = append(matchers, *v)
