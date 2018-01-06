@@ -121,7 +121,7 @@ func filterByPrefix(kvs []*mvccpb.KeyValue, prefix string) []*mvccpb.KeyValue {
 func (n *ng) Subscribe(changes chan interface{}, afterIdx uint64, cancelC chan struct{}) error {
 	watcher := etcd.NewWatcher(n.client)
 	defer watcher.Close()
-	rch := watcher.Watch(n.context, n.etcdKey+"/", etcd.WithPrefix())
+	rch := watcher.Watch(n.context, n.etcdKey+"/", etcd.WithRev(int64(afterIdx)), etcd.WithPrefix())
 	for wresp := range rch {
 		if wresp.Canceled {
 			fmt.Println("Stop watching: graceful shutdown")
