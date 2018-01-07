@@ -158,7 +158,12 @@ func (rt *Router) IsValid(r *http.Request) (bool, interface{}) {
 }
 
 // New ...
-func New(snp *en.Snapshot) negroni.Handler {
+func New(snp *en.Snapshot, newRouterC chan bool) negroni.Handler {
+	defer func() {
+		// fmt.Println("close(newRouterC)")
+		close(newRouterC)
+	}()
+
 	var frontends []*en.Frontend
 	var frontendsTemp []en.Frontend
 	frontendMap := make(map[string]*en.Frontend)
@@ -180,6 +185,8 @@ func New(snp *en.Snapshot) negroni.Handler {
 		frontends = append(frontends, &f)
 		frontendMap[f.RouteId] = &f
 	}
+	// 加载成功
+	newRouterC <- true
 	return &Router{
 		// snp:       snp,
 		frontendMap: frontendMap,

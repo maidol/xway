@@ -117,18 +117,26 @@ func (s *Service) initProxy() error {
 	changes := make(chan interface{}, changesBufferSize)
 	s.watcherCancelC = make(chan struct{})
 	s.watcherErrorC = make(chan struct{})
+	// 控制watching的开启
+	newRouterC := make(chan bool)
 	// s.watcherWg关联开启的goroutine
 	s.watcherWg.Add(1)
 	go func() {
 		defer s.watcherWg.Done() // 执行顺序 2
 		defer close(changes)     // 执行顺序 1
+		// TODO: 优化, 在snapshot获取后, 创建路由表xrouter.New(snp)成功后, 才进行watching, 否则不进行watching, 直接退出goroutine
+		b := <-newRouterC
+		if !b {
+			return
+		}
+		// fmt.Println("start watching")
 		if err := s.ng.Subscribe(changes, snp.Index+1, s.watcherCancelC); err != nil {
 			fmt.Printf("[engine.Subscribe] watcher failed: '%v'\n", err)
 			s.watcherErrorC <- struct{}{}
 			return
 		}
-		// s.watcherCancelC <- struct{}{}
-		fmt.Println("[engine.Subscribe] watcher shutdown")
+		// 发信息取消watch, close(s.watcherCancelC)
+		fmt.Println("[s.ng.Subscribe] watcher shutdown")
 	}()
 	// 初始化代理服务失败时需要等待对router进行监听的goroutine完全退出才能退出initProxy
 	// Make sure watcher goroutine [close(changes)] is stopped if initialization fails.
@@ -145,7 +153,7 @@ func (s *Service) initProxy() error {
 	// context
 	n.UseFunc(xwaymw.DefaultXWayContext())
 	// router
-	r := xrouter.New(snp)
+	r := xrouter.New(snp, newRouterC)
 	s.router = r.(router.Router)
 	n.Use(r)
 	// proxy
