@@ -30,8 +30,18 @@ func (rt *Router) ServeHTTP(rw http.ResponseWriter, r *http.Request, next http.H
 		return
 	}
 	// TODO: match中间件处理
-	if fe == nil {
-		fmt.Printf("match frontend %+v\n", fe)
+	if fe != nil {
+		// fmt.Printf("match frontend %+v\n", fe)
+		f := fe.(*en.Frontend)
+		switch f.Type {
+		case en.HTTP:
+			config := f.Config.(en.HTTPFrontendSettings)
+			for _, a := range config.Auth {
+				if a != "" {
+					// fmt.Printf("auth frontend %+v\n", a)
+				}
+			}
+		}
 	}
 
 	next(rw, r)
