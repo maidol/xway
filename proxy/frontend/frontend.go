@@ -36,8 +36,8 @@ func New(cfg en.Frontend) *T {
 				// fmt.Printf("Auth %+v %v\n", a, ok)
 				if !ok || pwd != "123456" {
 					// TODO: 产生错误退出
-					xwayCtx.Map["hasError"] = true
 					err := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeUnauthorized, "no auth")
+					xwayCtx.Map["error"] = err
 					err.Write(rw)
 					return
 				}
@@ -50,13 +50,13 @@ func New(cfg en.Frontend) *T {
 	return &fe
 }
 
-// ServeHTTP implements http.Handler.
-func (fe *T) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+// ServeHTTP implements negroni.Handler.
+func (fe *T) ServeHTTP(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 	fe.handler.ServeHTTP(w, r)
 	xwayCtx := xwaycontext.DefaultXWayContext(r.Context())
-	next := xwayCtx.Map["next"].(http.HandlerFunc)
-	hasError := xwayCtx.Map["hasError"].(bool)
-	if hasError {
+	// next := xwayCtx.Map["next"].(http.HandlerFunc)
+	err := xwayCtx.Map["error"]
+	if err != nil {
 		// TODO: 中间件验证不通过, 返回
 		return
 	}
