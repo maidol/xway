@@ -1,6 +1,8 @@
 package engine
 
-import "xway/router"
+import (
+	"xway/router"
+)
 
 type Snapshot struct {
 	Index         uint64

@@ -12,16 +12,19 @@ import (
 	en "xway/engine"
 	"xway/enum"
 	xerror "xway/error"
+	"xway/proxy/frontend"
 )
 
 // Router ...
 type Router struct {
 	// snp       *en.Snapshot
-	frontendMap map[string]*en.Frontend
-	frontends   []*en.Frontend
+	frontendMap   map[string]*en.Frontend
+	frontendMWMap map[string]*frontend.T
+	frontends     []*en.Frontend
 }
 
 func (rt *Router) ServeHTTP(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
+	xwayCtx := xwaycontext.DefaultXWayContext(r.Context())
 	// 处理路由匹配
 	fmt.Printf("[MW:xrouter] -> url router for: r.Host %v, r.URL %v\n", r.Host, r.URL)
 	match, fe := rt.IsValid(r)
@@ -33,15 +36,11 @@ func (rt *Router) ServeHTTP(rw http.ResponseWriter, r *http.Request, next http.H
 	if fe != nil {
 		// fmt.Printf("match frontend %+v\n", fe)
 		f := fe.(*en.Frontend)
-		switch f.Type {
-		case en.HTTP:
-			config := f.Config.(en.HTTPFrontendSettings)
-			for _, a := range config.Auth {
-				if a != "" {
-					// fmt.Printf("auth frontend %+v\n", a)
-				}
-			}
-		}
+		ff := rt.frontendMWMap[f.RouteId]
+		xwayCtx.Map["next"] = next
+		xwayCtx.Map["hasError"] = false
+		ff.ServeHTTP(rw, r)
+		return
 	}
 
 	next(rw, r)
@@ -54,6 +53,7 @@ func (rt *Router) Remove(f interface{}) error {
 	rid := f.(string)
 	fmt.Printf("[xrouter.Remove] frontend %v\n", rid)
 	delete(rt.frontendMap, rid)
+	delete(rt.frontendMWMap, rid)
 
 	// 重新排序(重载路由表)
 	for _, v := range rt.frontendMap {
@@ -83,6 +83,7 @@ func (rt *Router) Handle(f interface{}) error {
 	fr := f.(en.Frontend)
 	fmt.Printf("[xrouter.Handle] frontend %v\n", fr)
 	rt.frontendMap[fr.RouteId] = &fr
+	rt.frontendMWMap[fr.RouteId] = frontend.New(fr)
 
 	// 重新排序(重载路由表)
 	for _, v := range rt.frontendMap {
@@ -167,6 +168,7 @@ func New(snp *en.Snapshot, newRouterC chan bool) negroni.Handler {
 	var frontends []*en.Frontend
 	var frontendsTemp []en.Frontend
 	frontendMap := make(map[string]*en.Frontend)
+	frontendMWMap := make(map[string]*frontend.T)
 
 	// 排序
 	for _, v := range snp.FrontendSpecs {
@@ -182,6 +184,8 @@ func New(snp *en.Snapshot, newRouterC chan bool) negroni.Handler {
 		// 防止每次传递变量地址(&v)一样导致的bug, 需赋值f:=v
 		// append(frontends, &v) => append(frontends, &f)
 		f := v
+		fe := frontend.New(f)
+		frontendMWMap[f.RouteId] = fe
 		frontends = append(frontends, &f)
 		frontendMap[f.RouteId] = &f
 	}
@@ -189,8 +193,9 @@ func New(snp *en.Snapshot, newRouterC chan bool) negroni.Handler {
 	newRouterC <- true
 	return &Router{
 		// snp:       snp,
-		frontendMap: frontendMap,
-		frontends:   frontends,
+		frontendMap:   frontendMap,
+		frontendMWMap: frontendMWMap,
+		frontends:     frontends,
 	}
 }
 
