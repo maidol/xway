@@ -184,6 +184,7 @@ func New(snp *en.Snapshot, newRouterC chan bool) negroni.Handler {
 		// 防止每次传递变量地址(&v)一样导致的bug, 需赋值f:=v
 		// append(frontends, &v) => append(frontends, &f)
 		f := v
+		// 加载前端的处理中间件
 		fe := frontend.New(f)
 		frontendMWMap[f.RouteId] = fe
 		frontends = append(frontends, &f)
