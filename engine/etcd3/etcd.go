@@ -12,10 +12,12 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"xway/engine"
+	"xway/plugin"
 )
 
 type ng struct {
 	nodes         []string
+	registry      *plugin.Registry
 	etcdKey       string
 	client        *etcd.Client
 	context       context.Context
@@ -30,11 +32,12 @@ type Options struct {
 	EtcdSyncIntervalSeconds int64
 }
 
-func New(nodes []string, etcdKey string, options Options) (engine.Engine, error) {
+func New(nodes []string, etcdKey string, registry *plugin.Registry, options Options) (engine.Engine, error) {
 	n := &ng{
-		nodes:   nodes,
-		etcdKey: "/" + etcdKey,
-		options: options,
+		nodes:    nodes,
+		registry: registry,
+		etcdKey:  "/" + etcdKey,
+		options:  options,
 	}
 
 	if err := n.reconnect(); err != nil {
@@ -79,7 +82,7 @@ func (n *ng) parseFrontends(kvs []*mvccpb.KeyValue) ([]engine.FrontendSpec, erro
 	for _, kv := range kvs {
 		// fmt.Println("-> frontend kv", string(kv.Key), string(kv.Value))
 		// frontend, err := engine.FrontendFromJSON(n.registry.GetRouter(), []byte(kv.Value))
-		frontend, err := engine.FrontendFromJSON(nil, []byte(kv.Value))
+		frontend, err := engine.FrontendFromJSON(n.registry.GetRouter(), []byte(kv.Value))
 		if err != nil {
 			return nil, err
 		}
@@ -190,4 +193,8 @@ func (n *ng) parseFrontendChange(e *etcd.Event) (interface{}, error) {
 		}, nil
 	}
 	return nil, fmt.Errorf("unsupported action on the frontend: %v %v", e.Kv.Key, e.Type)
+}
+
+func (n *ng) GetRegistry() *plugin.Registry {
+	return n.registry
 }

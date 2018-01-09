@@ -8,13 +8,13 @@ import (
 	"time"
 
 	logrus_logstash "github.com/bshuster-repo/logrus-logstash-hook"
-	etcd "github.com/coreos/etcd/client"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/negroni"
 
 	en "xway/engine"
 	"xway/engine/etcd3"
 	"xway/middleware"
+	"xway/plugin"
 	"xway/proxy"
 	"xway/router"
 	"xway/router/xrouter"
@@ -26,8 +26,9 @@ const (
 )
 
 type Service struct {
-	client         etcd.Client
+	// client         etcd.Client
 	options        Options
+	registry       *plugin.Registry
 	ng             en.Engine
 	ngiSvc         *negroni.Negroni
 	router         router.Router
@@ -63,9 +64,10 @@ func init() {
 	appLogger = logger.WithFields(logrus.Fields{"name": "app"})
 }
 
-func NewService(options Options) *Service {
+func NewService(options Options, registry *plugin.Registry) *Service {
 	return &Service{
-		options: options,
+		options:  options,
+		registry: registry,
 	}
 }
 
@@ -79,7 +81,7 @@ func (s *Service) initEngine() error {
 		return errors.New("Unsupport etcdApiVersion=2")
 	}
 
-	ng, err := etcd3.New(s.options.EtcdNodes, s.options.EtcdKey, etcd3.Options{})
+	ng, err := etcd3.New(s.options.EtcdNodes, s.options.EtcdKey, s.registry, etcd3.Options{})
 	if err != nil {
 		return err
 	}
@@ -155,6 +157,7 @@ func (s *Service) initProxy() error {
 	// router
 	r := xrouter.New(snp, newRouterC)
 	s.router = r.(router.Router)
+	s.registry.SetRouter(s.router)
 	n.Use(r)
 	// proxy
 	p, err := proxy.NewDo()
@@ -199,7 +202,7 @@ func (s *Service) load() error {
 }
 
 // Run ...
-func Run() error {
+func Run(registry *plugin.Registry) error {
 	fmt.Println("[Running......]")
 	// 加载配置
 	options, err := ParseCommandLine()
@@ -210,7 +213,7 @@ func Run() error {
 	// fmt.Println("初始化......")
 
 	// appLogger.Info("Starting......")
-	s := NewService(options)
+	s := NewService(options, registry)
 	if err := s.load(); err != nil {
 		return fmt.Errorf("service start failure: %s", err)
 	}
