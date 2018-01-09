@@ -12,12 +12,14 @@ import (
 	en "xway/engine"
 	"xway/enum"
 	xerror "xway/error"
+	"xway/plugin"
 	"xway/proxy/frontend"
 )
 
 // Router ...
 type Router struct {
 	// snp       *en.Snapshot
+	registry      *plugin.Registry
 	frontendMap   map[string]*en.Frontend
 	frontendMWMap map[string]*frontend.T
 	frontends     []*en.Frontend
@@ -79,7 +81,7 @@ func (rt *Router) Handle(f interface{}) error {
 	fr := f.(en.Frontend)
 	fmt.Printf("[xrouter.Handle] frontend %v\n", fr)
 	rt.frontendMap[fr.RouteId] = &fr
-	rt.frontendMWMap[fr.RouteId] = frontend.New(fr)
+	rt.frontendMWMap[fr.RouteId] = frontend.New(fr, rt.registry)
 
 	// 重新排序(重载路由表)
 	for _, v := range rt.frontendMap {
@@ -155,7 +157,7 @@ func (rt *Router) IsValid(r *http.Request) (bool, interface{}) {
 }
 
 // New ...
-func New(snp *en.Snapshot, newRouterC chan bool) negroni.Handler {
+func New(snp *en.Snapshot, registry *plugin.Registry, newRouterC chan bool) negroni.Handler {
 	defer func() {
 		// fmt.Println("close(newRouterC)")
 		close(newRouterC)
@@ -181,7 +183,7 @@ func New(snp *en.Snapshot, newRouterC chan bool) negroni.Handler {
 		// append(frontends, &v) => append(frontends, &f)
 		f := v
 		// 加载前端的处理中间件
-		fe := frontend.New(f)
+		fe := frontend.New(f, registry)
 		frontendMWMap[f.RouteId] = fe
 		frontends = append(frontends, &f)
 		frontendMap[f.RouteId] = &f
@@ -190,6 +192,7 @@ func New(snp *en.Snapshot, newRouterC chan bool) negroni.Handler {
 	newRouterC <- true
 	return &Router{
 		// snp:       snp,
+		registry:      registry,
 		frontendMap:   frontendMap,
 		frontendMWMap: frontendMWMap,
 		frontends:     frontends,

@@ -155,7 +155,7 @@ func (s *Service) initProxy() error {
 	// context
 	n.UseFunc(xwaymw.DefaultXWayContext())
 	// router
-	r := xrouter.New(snp, newRouterC)
+	r := xrouter.New(snp, s.registry, newRouterC)
 	s.router = r.(router.Router)
 	s.registry.SetRouter(s.router)
 	n.Use(r)
