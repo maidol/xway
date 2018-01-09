@@ -114,7 +114,7 @@ func (s *Service) initProxy() error {
 		return err
 	}
 	// fmt.Printf("GetSnapshot -> %#v\n", snp)
-	// TODO: 需要处理发生错误时, goroutine退出
+	// 需要处理发生错误时, goroutine退出
 	cancelWatcher := true // 标记是否取消监听router等信息的变化
 	changes := make(chan interface{}, changesBufferSize)
 	s.watcherCancelC = make(chan struct{})
@@ -126,7 +126,7 @@ func (s *Service) initProxy() error {
 	go func() {
 		defer s.watcherWg.Done() // 执行顺序 2
 		defer close(changes)     // 执行顺序 1
-		// TODO: 优化, 在snapshot获取后, 创建路由表xrouter.New(snp)成功后, 才进行watching, 否则不进行watching, 直接退出goroutine
+		// 优化, 在snapshot获取后, 创建路由表xrouter.New(snp)成功后, 才进行watching, 否则不进行watching, 直接退出goroutine
 		b := <-newRouterC
 		if !b {
 			return

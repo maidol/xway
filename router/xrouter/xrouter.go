@@ -38,9 +38,6 @@ func (rt *Router) ServeHTTP(rw http.ResponseWriter, r *http.Request, next http.H
 	// fmt.Printf("match frontend %+v\n", fe)
 	f := fe.(*en.Frontend)
 	ff := rt.frontendMWMap[f.RouteId]
-	// xwayCtx := xwaycontext.DefaultXWayContext(r.Context())
-	// xwayCtx.Map["next"] = next
-	// xwayCtx.Map["error"] = nil
 	ff.ServeHTTP(rw, r, next)
 }
 
