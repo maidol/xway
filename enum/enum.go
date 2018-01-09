@@ -15,6 +15,7 @@ var CodeMsg = map[int]string{
 	ECodeRouteNotFound: "未能成功匹配代理路由",
 	ECodeProxyFailed:   "服务器错误",
 	ECodeUnauthorized:  "未认证的请求",
+	ECodeInternal:      "服务器内部错误",
 }
 
 // CodeStatus ...
