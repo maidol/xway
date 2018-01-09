@@ -24,7 +24,6 @@ type Router struct {
 }
 
 func (rt *Router) ServeHTTP(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
-	xwayCtx := xwaycontext.DefaultXWayContext(r.Context())
 	// 处理路由匹配
 	fmt.Printf("[MW:xrouter] -> url router for: r.Host %v, r.URL %v\n", r.Host, r.URL)
 	match, fe := rt.IsValid(r)
@@ -32,18 +31,15 @@ func (rt *Router) ServeHTTP(rw http.ResponseWriter, r *http.Request, next http.H
 		DefaultNotFound(rw, r)
 		return
 	}
-	// TODO: match中间件处理
-	if fe != nil {
-		// fmt.Printf("match frontend %+v\n", fe)
-		f := fe.(*en.Frontend)
-		ff := rt.frontendMWMap[f.RouteId]
-		xwayCtx.Map["next"] = next
-		xwayCtx.Map["hasError"] = false
-		ff.ServeHTTP(rw, r)
-		return
-	}
 
-	next(rw, r)
+	// TODO: match中间件处理
+	// fmt.Printf("match frontend %+v\n", fe)
+	f := fe.(*en.Frontend)
+	ff := rt.frontendMWMap[f.RouteId]
+	// xwayCtx := xwaycontext.DefaultXWayContext(r.Context())
+	// xwayCtx.Map["next"] = next
+	// xwayCtx.Map["error"] = nil
+	ff.ServeHTTP(rw, r, next)
 }
 
 // Remove ...
