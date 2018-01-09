@@ -1,6 +1,7 @@
 package authtoken
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 	"xway/context"
@@ -32,7 +33,10 @@ func New(opt interface{}) negroni.Handler {
 
 func (at *AuthToken) ServeHTTP(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 	xwayCtx := xwaycontext.DefaultXWayContext(r.Context())
-	rdc := xwayCtx.Registry.GetRedisPool().Get()
+	p := xwayCtx.Registry.GetRedisPool()
+	fmt.Println(p.ActiveCount(), p.IdleCount(), p.Stats())
+	rdc := p.Get()
+	defer rdc.Close()
 	_, err := rdc.Do("SET", "GO_AuthToken", time.Now().String())
 	if err != nil {
 		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeInternal, err.Error())

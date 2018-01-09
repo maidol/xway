@@ -73,7 +73,7 @@ func NewService(options Options, registry *plugin.Registry) *Service {
 }
 
 func (s *Service) initDB() error {
-	p := redis.Pool(redis.Options{MaxIdle: 10, Address: "192.168.2.163:6379", Password: "ciwongrds"})
+	p := redis.Pool(redis.Options{MaxIdle: 200, Address: "192.168.2.163:6379", Password: "ciwongrds"})
 	s.registry.SetRedisPool(p)
 	return nil
 }
