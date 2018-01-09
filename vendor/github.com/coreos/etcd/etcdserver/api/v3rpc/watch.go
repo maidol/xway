@@ -15,10 +15,11 @@
 package v3rpc
 
 import (
-	"context"
 	"io"
 	"sync"
 	"time"
+
+	"golang.org/x/net/context"
 
 	"github.com/coreos/etcd/auth"
 	"github.com/coreos/etcd/etcdserver"
@@ -140,7 +141,7 @@ func (ws *watchServer) Watch(stream pb.Watch_WatchServer) (err error) {
 	// deadlock when calling sws.close().
 	go func() {
 		if rerr := sws.recvLoop(); rerr != nil {
-			plog.Warningf("failed to receive watch request from gRPC stream (%q)", rerr.Error())
+			plog.Debugf("failed to receive watch request from gRPC stream (%q)", rerr.Error())
 			errc <- rerr
 		}
 	}()
@@ -321,13 +322,11 @@ func (sws *serverWatchStream) sendLoop() {
 				}
 			}
 
-			canceled := wresp.CompactRevision != 0
 			wr := &pb.WatchResponse{
 				Header:          sws.newResponseHeader(wresp.Revision),
 				WatchId:         int64(wresp.WatchID),
 				Events:          events,
 				CompactRevision: wresp.CompactRevision,
-				Canceled:        canceled,
 			}
 
 			if _, hasId := ids[wresp.WatchID]; !hasId {
@@ -339,7 +338,7 @@ func (sws *serverWatchStream) sendLoop() {
 
 			mvcc.ReportEventReceived(len(evs))
 			if err := sws.gRPCStream.Send(wr); err != nil {
-				plog.Warningf("failed to send watch response to gRPC stream (%q)", err.Error())
+				plog.Debugf("failed to send watch response to gRPC stream (%q)", err.Error())
 				return
 			}
 
@@ -356,7 +355,7 @@ func (sws *serverWatchStream) sendLoop() {
 			}
 
 			if err := sws.gRPCStream.Send(c); err != nil {
-				plog.Warningf("failed to send watch control response to gRPC stream (%q)", err.Error())
+				plog.Debugf("failed to send watch control response to gRPC stream (%q)", err.Error())
 				return
 			}
 
@@ -372,7 +371,7 @@ func (sws *serverWatchStream) sendLoop() {
 				for _, v := range pending[wid] {
 					mvcc.ReportEventReceived(len(v.Events))
 					if err := sws.gRPCStream.Send(v); err != nil {
-						plog.Warningf("failed to send pending watch response to gRPC stream (%q)", err.Error())
+						plog.Debugf("failed to send pending watch response to gRPC stream (%q)", err.Error())
 						return
 					}
 				}

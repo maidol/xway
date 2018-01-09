@@ -16,7 +16,6 @@ package membership
 
 import (
 	"bytes"
-	"context"
 	"crypto/sha1"
 	"encoding/binary"
 	"encoding/json"
@@ -27,6 +26,8 @@ import (
 	"sync"
 	"time"
 
+	"golang.org/x/net/context"
+
 	"github.com/coreos/etcd/mvcc/backend"
 	"github.com/coreos/etcd/pkg/netutil"
 	"github.com/coreos/etcd/pkg/types"
@@ -34,7 +35,6 @@ import (
 	"github.com/coreos/etcd/raft/raftpb"
 	"github.com/coreos/etcd/store"
 	"github.com/coreos/etcd/version"
-
 	"github.com/coreos/go-semver/semver"
 )
 

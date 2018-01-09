@@ -15,7 +15,6 @@
 package integration
 
 import (
-	"context"
 	"reflect"
 	"sort"
 	"sync"
@@ -28,6 +27,7 @@ import (
 	"github.com/coreos/etcd/integration"
 	"github.com/coreos/etcd/pkg/testutil"
 
+	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 
@@ -569,37 +569,6 @@ func TestLeaseTimeToLiveLeaseNotFound(t *testing.T) {
 	}
 	if lresp.TTL != -1 {
 		t.Fatalf("expected TTL %v, but got %v", lresp.TTL, lresp.TTL)
-	}
-}
-
-func TestLeaseLeases(t *testing.T) {
-	defer testutil.AfterTest(t)
-
-	clus := integration.NewClusterV3(t, &integration.ClusterConfig{Size: 1})
-	defer clus.Terminate(t)
-
-	cli := clus.RandClient()
-
-	ids := []clientv3.LeaseID{}
-	for i := 0; i < 5; i++ {
-		resp, err := cli.Grant(context.Background(), 10)
-		if err != nil {
-			t.Errorf("failed to create lease %v", err)
-		}
-		ids = append(ids, resp.ID)
-	}
-
-	resp, err := cli.Leases(context.Background())
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(resp.Leases) != 5 {
-		t.Fatalf("len(resp.Leases) expected 5, got %d", len(resp.Leases))
-	}
-	for i := range resp.Leases {
-		if ids[i] != resp.Leases[i].ID {
-			t.Fatalf("#%d: lease ID expected %d, got %d", i, ids[i], resp.Leases[i].ID)
-		}
 	}
 }
 

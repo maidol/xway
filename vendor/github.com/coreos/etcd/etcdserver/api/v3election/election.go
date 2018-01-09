@@ -15,7 +15,7 @@
 package v3election
 
 import (
-	"context"
+	"golang.org/x/net/context"
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/clientv3/concurrency"

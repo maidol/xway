@@ -18,11 +18,8 @@ import "errors"
 
 // NewStringsFlag creates a new string flag for which any one of the given
 // strings is a valid value, and any other value is an error.
-//
-// valids[0] will be default value. Caller must be sure len(valids)!=0 or
-// it will panic.
 func NewStringsFlag(valids ...string) *StringsFlag {
-	return &StringsFlag{Values: valids, val: valids[0]}
+	return &StringsFlag{Values: valids}
 }
 
 // StringsFlag implements the flag.Value interface.

@@ -15,7 +15,6 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"time"
 
@@ -23,6 +22,7 @@ import (
 	"github.com/coreos/etcd/pkg/report"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/net/context"
 	"gopkg.in/cheggaaa/pb.v1"
 )
 

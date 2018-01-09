@@ -8,21 +8,15 @@
 
 [[projects]]
   name = "github.com/coreos/etcd"
-  packages = ["auth/authpb","client","clientv3","etcdserver/api/v3rpc/rpctypes","etcdserver/etcdserverpb","mvcc/mvccpb","pkg/pathutil","pkg/srv","pkg/types","version"]
+  packages = ["auth/authpb","client","clientv3","etcdserver/api/v3rpc/rpctypes","etcdserver/etcdserverpb","mvcc/mvccpb"]
   revision = "95a726a27e09030f9ccbd9982a1508f5a6d25ada"
   version = "v3.2.13"
 
 [[projects]]
-  name = "github.com/coreos/go-semver"
-  packages = ["semver"]
-  revision = "8ab6407b697782a06568d4b7f1db25550ec2e4c6"
-  version = "v0.2.0"
-
-[[projects]]
-  name = "github.com/gogo/protobuf"
-  packages = ["gogoproto","proto","protoc-gen-gogo/descriptor"]
-  revision = "342cbe0a04158f6dcb03ca0079991a51a4248c02"
-  version = "v0.5"
+  name = "github.com/garyburd/redigo"
+  packages = ["internal","redis"]
+  revision = "d1ed5c67e5794de818ea85e6b522fda02623a484"
+  version = "v1.4.0"
 
 [[projects]]
   branch = "master"
@@ -47,12 +41,6 @@
   packages = ["."]
   revision = "d682213848ed68c0a260ca37d6dd5ace8423f5ba"
   version = "v1.0.4"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/ugorji/go"
-  packages = ["codec"]
-  revision = "ccfe18359b55b97855cee1d3f74e5efbda4869dc"
 
 [[projects]]
   name = "github.com/urfave/negroni"
@@ -105,6 +93,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "b146412c1f1cf441602060a7cd57d7b344881fd42ae6a9e0ae49a150617c5000"
+  inputs-digest = "51da9ca9a54139ed45de20e4c2404afb766c1cf6aca4ebf1b92991d393b0509c"
   solver-name = "gps-cdcl"
   solver-version = 1

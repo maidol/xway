@@ -15,17 +15,17 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"net"
 	"net/url"
 	"time"
 
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+
 	"github.com/coreos/etcd/clientv3"
 	pb "github.com/coreos/etcd/etcdserver/etcdserverpb"
 	"github.com/coreos/etcd/tools/functional-tester/etcd-agent/client"
-
-	"google.golang.org/grpc"
 )
 
 type member struct {
@@ -47,7 +47,6 @@ func (m *member) Flags() []string {
 		"--listen-peer-urls", m.PeerURL,
 		"--initial-advertise-peer-urls", m.PeerURL,
 		"--initial-cluster-state", "new",
-		"--experimental-initial-corrupt-check",
 	}
 }
 

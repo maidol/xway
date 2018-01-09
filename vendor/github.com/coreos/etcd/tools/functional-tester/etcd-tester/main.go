@@ -17,7 +17,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
@@ -25,9 +24,8 @@ import (
 	"github.com/coreos/etcd/pkg/debugutil"
 
 	"github.com/coreos/pkg/capnslog"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/time/rate"
-	"google.golang.org/grpc/grpclog"
 )
 
 var plog = capnslog.NewPackageLogger("github.com/coreos/etcd", "etcd-tester")
@@ -59,9 +57,6 @@ func main() {
 	externalFailures := flag.String("external-failures", "", "specify a path of script for enabling/disabling an external fault injector")
 	enablePprof := flag.Bool("enable-pprof", false, "true to enable pprof")
 	flag.Parse()
-
-	// to discard gRPC-side balancer logs
-	grpclog.SetLoggerV2(grpclog.NewLoggerV2(ioutil.Discard, ioutil.Discard, ioutil.Discard))
 
 	eps := strings.Split(*endpointStr, ",")
 	cports := portsFromArg(*clientPorts, len(eps), defaultClientPort)
@@ -143,7 +138,7 @@ func main() {
 
 	sh := statusHandler{status: &t.status}
 	http.Handle("/status", sh)
-	http.Handle("/metrics", promhttp.Handler())
+	http.Handle("/metrics", prometheus.Handler())
 
 	if *enablePprof {
 		for p, h := range debugutil.PProfHandlers() {

@@ -15,7 +15,6 @@
 package command
 
 import (
-	"context"
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/json"
@@ -28,6 +27,7 @@ import (
 	"reflect"
 	"strings"
 
+	bolt "github.com/coreos/bbolt"
 	"github.com/coreos/etcd/etcdserver"
 	"github.com/coreos/etcd/etcdserver/etcdserverpb"
 	"github.com/coreos/etcd/etcdserver/membership"
@@ -42,9 +42,8 @@ import (
 	"github.com/coreos/etcd/store"
 	"github.com/coreos/etcd/wal"
 	"github.com/coreos/etcd/wal/walpb"
-
-	bolt "github.com/coreos/bbolt"
 	"github.com/spf13/cobra"
+	"golang.org/x/net/context"
 )
 
 const (
@@ -392,7 +391,6 @@ func makeDB(snapdir, dbfile string, commit int) {
 	txn.End()
 	s.Commit()
 	s.Close()
-	be.Close()
 }
 
 type dbstatus struct {
@@ -409,7 +407,7 @@ func dbStatus(p string) dbstatus {
 
 	ds := dbstatus{}
 
-	db, err := bolt.Open(p, 0400, &bolt.Options{ReadOnly: true})
+	db, err := bolt.Open(p, 0400, nil)
 	if err != nil {
 		ExitWithError(ExitError, err)
 	}

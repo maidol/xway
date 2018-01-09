@@ -15,7 +15,6 @@
 package cmd
 
 import (
-	"context"
 	"encoding/binary"
 	"fmt"
 	"math"
@@ -26,6 +25,7 @@ import (
 	"github.com/coreos/etcd/pkg/report"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/net/context"
 	"golang.org/x/time/rate"
 	"gopkg.in/cheggaaa/pb.v1"
 )

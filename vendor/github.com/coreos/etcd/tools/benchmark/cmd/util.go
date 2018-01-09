@@ -15,7 +15,6 @@
 package cmd
 
 import (
-	"context"
 	"crypto/rand"
 	"fmt"
 	"os"
@@ -23,8 +22,9 @@ import (
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/pkg/report"
+
+	"golang.org/x/net/context"
 	"google.golang.org/grpc/grpclog"
-	"github.com/bgentry/speakeasy"
 )
 
 var (
@@ -34,10 +34,6 @@ var (
 
 	// leaderEps is a cache for holding endpoints of a leader node
 	leaderEps []string
-
-	// cache the username and password for multiple connections
-	globalUserName string
-	globalPassword string
 )
 
 func mustFindLeaderEndpoints(c *clientv3.Client) {
@@ -66,26 +62,6 @@ func mustFindLeaderEndpoints(c *clientv3.Client) {
 	os.Exit(1)
 }
 
-func getUsernamePassword(usernameFlag string) (string, string, error) {
-	if globalUserName != "" && globalPassword != "" {
-		return globalUserName, globalPassword, nil
-	}
-	colon := strings.Index(usernameFlag, ":")
-	if colon == -1 {
-		// Prompt for the password.
-		password, err := speakeasy.Ask("Password: ")
-		if err != nil {
-			return "", "", err
-		}
-		globalUserName = usernameFlag
-		globalPassword = password
-	} else {
-		globalUserName = usernameFlag[:colon]
-		globalPassword = usernameFlag[colon+1:]
-	}
-	return globalUserName, globalPassword, nil
-}
-
 func mustCreateConn() *clientv3.Client {
 	connEndpoints := leaderEps
 	if len(connEndpoints) == 0 {
@@ -106,14 +82,14 @@ func mustCreateConn() *clientv3.Client {
 	}
 
 	if len(user) != 0 {
-		username, password, err := getUsernamePassword(user)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "bad user information: %s %v\n", user, err)
+		splitted := strings.SplitN(user, ":", 2)
+		if len(splitted) != 2 {
+			fmt.Fprintf(os.Stderr, "bad user information: %s\n", user)
 			os.Exit(1)
 		}
-		cfg.Username = username
-		cfg.Password = password
 
+		cfg.Username = splitted[0]
+		cfg.Password = splitted[1]
 	}
 
 	client, err := clientv3.New(cfg)
@@ -165,15 +141,4 @@ func newReport() report.Report {
 		return report.NewReportSample(p)
 	}
 	return report.NewReport(p)
-}
-
-func newWeightedReport() report.Report {
-	p := "%4.4f"
-	if precise {
-		p = "%g"
-	}
-	if sample {
-		return report.NewReportSample(p)
-	}
-	return report.NewWeightedReport(report.NewReport(p), p)
 }

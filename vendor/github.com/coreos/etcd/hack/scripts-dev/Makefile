@@ -54,15 +54,11 @@ pull-docker-test:
 	$(info GO_VERSION: $(_GO_VERSION))
 	docker pull gcr.io/etcd-development/etcd-test:go$(_GO_VERSION)
 
-# Example:
-#   make build-docker-test -f ./hack/scripts-dev/Makefile
-#   make compile-with-docker-test -f ./hack/scripts-dev/Makefile
-
 compile-with-docker-test:
 	$(info GO_VERSION: $(_GO_VERSION))
 	docker run \
 	  --rm \
-	  --mount type=bind,source=`pwd`,destination=/etcd \
+	  --volume=`pwd`/:/etcd \
 	  gcr.io/etcd-development/etcd-test:go$(_GO_VERSION) \
 	  /bin/bash -c "cd /etcd && GO_BUILD_FLAGS=-v ./build && ./bin/etcd --version"
 
@@ -82,23 +78,16 @@ compile-with-docker-test:
 #
 # Semaphore CI (test with docker):
 #   TEST_OPTS="RELEASE_TEST=y INTEGRATION=y PASSES='build unit release integration_e2e functional'" make docker-test -f ./hack/scripts-dev/Makefile
-#   HOST_TMP_DI=/tmp TEST_OPTS="RELEASE_TEST=y INTEGRATION=y PASSES='build unit release integration_e2e functional'" make docker-test -f ./hack/scripts-dev/Makefile
 #   TEST_OPTS="GOARCH=386 PASSES='build unit integration_e2e'" make docker-test -f ./hack/scripts-dev/Makefile
 #
 # grpc-proxy tests (test with docker):
 #   TEST_OPTS="PASSES='build grpcproxy'" make docker-test -f ./hack/scripts-dev/Makefile
-#   HOST_TMP_DI=/tmp TEST_OPTS="PASSES='build grpcproxy'" make docker-test -f ./hack/scripts-dev/Makefile
 
 TEST_SUFFIX = $(shell date +%s | base64 | head -c 15)
 
-_TEST_OPTS = PASSES='unit'
+_TEST_OPTS = "PASSES='unit'"
 ifdef TEST_OPTS
 	_TEST_OPTS = $(TEST_OPTS)
-endif
-
-_TMP_DIR_MOUNT_FLAG = --mount type=tmpfs,destination=/tmp
-ifdef HOST_TMP_DIR
-	_TMP_DIR_MOUNT_FLAG = --mount type=bind,source=$(HOST_TMP_DIR),destination=/tmp
 endif
 
 .PHONY: test
@@ -106,34 +95,30 @@ test:
 	$(info TEST_OPTS: $(_TEST_OPTS))
 	$(info log-file: test-$(TEST_SUFFIX).log)
 	$(_TEST_OPTS) ./test 2>&1 | tee test-$(TEST_SUFFIX).log
-	! egrep "(--- FAIL:|panic: test timed out|appears to have leaked)" -B50 -A10 test-$(TEST_SUFFIX).log
+	! egrep "(--- FAIL:|panic: test timed out|appears to have leaked|Too many goroutines)" -B50 -A10 test-$(TEST_SUFFIX).log
 
 docker-test:
 	$(info GO_VERSION: $(_GO_VERSION))
 	$(info TEST_OPTS: $(_TEST_OPTS))
 	$(info log-file: test-$(TEST_SUFFIX).log)
-	$(info HOST_TMP_DIR: $(HOST_TMP_DIR))
-	$(info TMP_DIR_MOUNT_FLAG: $(_TMP_DIR_MOUNT_FLAG))
 	docker run \
 	  --rm \
-	  $(_TMP_DIR_MOUNT_FLAG) \
-	  --mount type=bind,source=`pwd`,destination=/go/src/github.com/coreos/etcd \
+	  --volume=/tmp:/tmp \
+	  --volume=`pwd`:/go/src/github.com/coreos/etcd \
 	  gcr.io/etcd-development/etcd-test:go$(_GO_VERSION) \
 	  /bin/bash -c "$(_TEST_OPTS) ./test 2>&1 | tee test-$(TEST_SUFFIX).log"
-	! egrep "(--- FAIL:|panic: test timed out|appears to have leaked)" -B50 -A10 test-$(TEST_SUFFIX).log
+	! egrep "(--- FAIL:|panic: test timed out|appears to have leaked|Too many goroutines)" -B50 -A10 test-$(TEST_SUFFIX).log
 
 docker-test-coverage:
 	$(info GO_VERSION: $(_GO_VERSION))
 	$(info log-file: docker-test-coverage-$(TEST_SUFFIX).log)
-	$(info HOST_TMP_DIR: $(HOST_TMP_DIR))
-	$(info TMP_DIR_MOUNT_FLAG: $(_TMP_DIR_MOUNT_FLAG))
 	docker run \
 	  --rm \
-	  $(_TMP_DIR_MOUNT_FLAG) \
-	  --mount type=bind,source=`pwd`,destination=/go/src/github.com/coreos/etcd \
+	  --volume=/tmp:/tmp \
+	  --volume=`pwd`:/go/src/github.com/coreos/etcd \
 	  gcr.io/etcd-development/etcd-test:go$(_GO_VERSION) \
 	  /bin/bash -c "COVERDIR=covdir PASSES='build build_cov cov' ./test 2>&1 | tee docker-test-coverage-$(TEST_SUFFIX).log && /codecov -t 6040de41-c073-4d6f-bbf8-d89256ef31e1"
-	! egrep "(--- FAIL:|panic: test timed out|appears to have leaked)" -B50 -A10 docker-test-coverage-$(TEST_SUFFIX).log
+	! egrep "(--- FAIL:|panic: test timed out|appears to have leaked|Too many goroutines)" -B50 -A10 docker-test-coverage-$(TEST_SUFFIX).log
 
 # build release container image with Linux
 _ETCD_VERSION ?= $(shell git rev-parse --short HEAD || echo "GitNotFound")
@@ -163,61 +148,6 @@ build-docker-release-master: compile-with-docker-test
 push-docker-release-master:
 	$(info ETCD_VERSION: $(_ETCD_VERSION))
 	gcloud docker -- push gcr.io/etcd-development/etcd:$(_ETCD_VERSION)
-
-# Example:
-#   make build-docker-test -f ./hack/scripts-dev/Makefile
-#   make compile-with-docker-test -f ./hack/scripts-dev/Makefile
-#   make build-docker-static-ip-test -f ./hack/scripts-dev/Makefile
-#   gcloud docker -- login -u _json_key -p "$(cat /etc/gcp-key-etcd-development.json)" https://gcr.io
-#   make push-docker-static-ip-test -f ./hack/scripts-dev/Makefile
-#   gsutil -m acl ch -u allUsers:R -r gs://artifacts.etcd-development.appspot.com
-#   make pull-docker-static-ip-test -f ./hack/scripts-dev/Makefile
-#   make docker-static-ip-test-certs-run -f ./hack/scripts-dev/Makefile
-#   make docker-static-ip-test-certs-metrics-proxy-run -f ./hack/scripts-dev/Makefile
-
-build-docker-static-ip-test:
-	$(info GO_VERSION: $(_GO_VERSION))
-	@cat ./hack/scripts-dev/docker-static-ip/Dockerfile | sed s/REPLACE_ME_GO_VERSION/$(_GO_VERSION)/ \
-	  > ./hack/scripts-dev/docker-static-ip/.Dockerfile
-
-	docker build \
-	  --tag gcr.io/etcd-development/etcd-static-ip-test:go$(_GO_VERSION) \
-	  --file ./hack/scripts-dev/docker-static-ip/.Dockerfile \
-	  ./hack/scripts-dev/docker-static-ip
-
-push-docker-static-ip-test:
-	$(info GO_VERSION: $(_GO_VERSION))
-	gcloud docker -- push gcr.io/etcd-development/etcd-static-ip-test:go$(_GO_VERSION)
-
-pull-docker-static-ip-test:
-	$(info GO_VERSION: $(_GO_VERSION))
-	docker pull gcr.io/etcd-development/etcd-static-ip-test:go$(_GO_VERSION)
-
-docker-static-ip-test-certs-run:
-	$(info GO_VERSION: $(_GO_VERSION))
-	$(info HOST_TMP_DIR: $(HOST_TMP_DIR))
-	$(info TMP_DIR_MOUNT_FLAG: $(_TMP_DIR_MOUNT_FLAG))
-	docker run \
-	  --rm \
-	  --tty \
-	  $(_TMP_DIR_MOUNT_FLAG) \
-	  --mount type=bind,source=`pwd`/bin,destination=/etcd \
-	  --mount type=bind,source=`pwd`/hack/scripts-dev/docker-static-ip/certs,destination=/certs \
-	  gcr.io/etcd-development/etcd-static-ip-test:go$(_GO_VERSION) \
-	  /bin/bash -c "cd /etcd && /certs/run.sh && rm -rf m*.etcd"
-
-docker-static-ip-test-certs-metrics-proxy-run:
-	$(info GO_VERSION: $(_GO_VERSION))
-	$(info HOST_TMP_DIR: $(HOST_TMP_DIR))
-	$(info TMP_DIR_MOUNT_FLAG: $(_TMP_DIR_MOUNT_FLAG))
-	docker run \
-	  --rm \
-	  --tty \
-	  $(_TMP_DIR_MOUNT_FLAG) \
-	  --mount type=bind,source=`pwd`/bin,destination=/etcd \
-	  --mount type=bind,source=`pwd`/hack/scripts-dev/docker-static-ip/certs-metrics-proxy,destination=/certs-metrics-proxy \
-	  gcr.io/etcd-development/etcd-static-ip-test:go$(_GO_VERSION) \
-	  /bin/bash -c "cd /etcd && /certs-metrics-proxy/run.sh && rm -rf m*.etcd"
 
 # Example:
 #   make build-docker-test -f ./hack/scripts-dev/Makefile
@@ -257,43 +187,37 @@ pull-docker-dns-test:
 
 docker-dns-test-certs-run:
 	$(info GO_VERSION: $(_GO_VERSION))
-	$(info HOST_TMP_DIR: $(HOST_TMP_DIR))
-	$(info TMP_DIR_MOUNT_FLAG: $(_TMP_DIR_MOUNT_FLAG))
 	docker run \
 	  --rm \
 	  --tty \
 	  --dns 127.0.0.1 \
-	  $(_TMP_DIR_MOUNT_FLAG) \
-	  --mount type=bind,source=`pwd`/bin,destination=/etcd \
-	  --mount type=bind,source=`pwd`/hack/scripts-dev/docker-dns/certs,destination=/certs \
+	  --volume=/tmp:/tmp \
+	  --volume=`pwd`/bin:/etcd \
+	  --volume=`pwd`/hack/scripts-dev/docker-dns/certs:/certs \
 	  gcr.io/etcd-development/etcd-dns-test:go$(_GO_VERSION) \
 	  /bin/bash -c "cd /etcd && /certs/run.sh && rm -rf m*.etcd"
 
 docker-dns-test-certs-gateway-run:
 	$(info GO_VERSION: $(_GO_VERSION))
-	$(info HOST_TMP_DIR: $(HOST_TMP_DIR))
-	$(info TMP_DIR_MOUNT_FLAG: $(_TMP_DIR_MOUNT_FLAG))
 	docker run \
 	  --rm \
 	  --tty \
 	  --dns 127.0.0.1 \
-	  $(_TMP_DIR_MOUNT_FLAG) \
-	  --mount type=bind,source=`pwd`/bin,destination=/etcd \
-	  --mount type=bind,source=`pwd`/hack/scripts-dev/docker-dns/certs-gateway,destination=/certs-gateway \
+	  --volume=/tmp:/tmp \
+	  --volume=`pwd`/bin:/etcd \
+	  --volume=`pwd`/hack/scripts-dev/docker-dns/certs-gateway:/certs-gateway \
 	  gcr.io/etcd-development/etcd-dns-test:go$(_GO_VERSION) \
 	  /bin/bash -c "cd /etcd && /certs-gateway/run.sh && rm -rf m*.etcd"
 
 docker-dns-test-certs-wildcard-run:
 	$(info GO_VERSION: $(_GO_VERSION))
-	$(info HOST_TMP_DIR: $(HOST_TMP_DIR))
-	$(info TMP_DIR_MOUNT_FLAG: $(_TMP_DIR_MOUNT_FLAG))
 	docker run \
 	  --rm \
 	  --tty \
 	  --dns 127.0.0.1 \
-	  $(_TMP_DIR_MOUNT_FLAG) \
-	  --mount type=bind,source=`pwd`/bin,destination=/etcd \
-	  --mount type=bind,source=`pwd`/hack/scripts-dev/docker-dns/certs-wildcard,destination=/certs-wildcard \
+	  --volume=/tmp:/tmp \
+	  --volume=`pwd`/bin:/etcd \
+	  --volume=`pwd`/hack/scripts-dev/docker-dns/certs-wildcard:/certs-wildcard \
 	  gcr.io/etcd-development/etcd-dns-test:go$(_GO_VERSION) \
 	  /bin/bash -c "cd /etcd && /certs-wildcard/run.sh && rm -rf m*.etcd"
 
@@ -335,59 +259,36 @@ pull-docker-dns-srv-test:
 
 docker-dns-srv-test-certs-run:
 	$(info GO_VERSION: $(_GO_VERSION))
-	$(info HOST_TMP_DIR: $(HOST_TMP_DIR))
-	$(info TMP_DIR_MOUNT_FLAG: $(_TMP_DIR_MOUNT_FLAG))
 	docker run \
 	  --rm \
 	  --tty \
 	  --dns 127.0.0.1 \
-	  $(_TMP_DIR_MOUNT_FLAG) \
-	  --mount type=bind,source=`pwd`/bin,destination=/etcd \
-	  --mount type=bind,source=`pwd`/hack/scripts-dev/docker-dns-srv/certs,destination=/certs \
+	  --volume=/tmp:/tmp \
+	  --volume=`pwd`/bin:/etcd \
+	  --volume=`pwd`/hack/scripts-dev/docker-dns-srv/certs:/certs \
 	  gcr.io/etcd-development/etcd-dns-srv-test:go$(_GO_VERSION) \
 	  /bin/bash -c "cd /etcd && /certs/run.sh && rm -rf m*.etcd"
 
 docker-dns-srv-test-certs-gateway-run:
 	$(info GO_VERSION: $(_GO_VERSION))
-	$(info HOST_TMP_DIR: $(HOST_TMP_DIR))
-	$(info TMP_DIR_MOUNT_FLAG: $(_TMP_DIR_MOUNT_FLAG))
 	docker run \
 	  --rm \
 	  --tty \
 	  --dns 127.0.0.1 \
-	  $(_TMP_DIR_MOUNT_FLAG) \
-	  --mount type=bind,source=`pwd`/bin,destination=/etcd \
-	  --mount type=bind,source=`pwd`/hack/scripts-dev/docker-dns-srv/certs-gateway,destination=/certs-gateway \
+	  --volume=/tmp:/tmp \
+	  --volume=`pwd`/bin:/etcd \
+	  --volume=`pwd`/hack/scripts-dev/docker-dns-srv/certs-gateway:/certs-gateway \
 	  gcr.io/etcd-development/etcd-dns-srv-test:go$(_GO_VERSION) \
 	  /bin/bash -c "cd /etcd && /certs-gateway/run.sh && rm -rf m*.etcd"
 
 docker-dns-srv-test-certs-wildcard-run:
 	$(info GO_VERSION: $(_GO_VERSION))
-	$(info HOST_TMP_DIR: $(HOST_TMP_DIR))
-	$(info TMP_DIR_MOUNT_FLAG: $(_TMP_DIR_MOUNT_FLAG))
 	docker run \
 	  --rm \
 	  --tty \
 	  --dns 127.0.0.1 \
-	  $(_TMP_DIR_MOUNT_FLAG) \
-	  --mount type=bind,source=`pwd`/bin,destination=/etcd \
-	  --mount type=bind,source=`pwd`/hack/scripts-dev/docker-dns-srv/certs-wildcard,destination=/certs-wildcard \
+	  --volume=/tmp:/tmp \
+	  --volume=`pwd`/bin:/etcd \
+	  --volume=`pwd`/hack/scripts-dev/docker-dns-srv/certs-wildcard:/certs-wildcard \
 	  gcr.io/etcd-development/etcd-dns-srv-test:go$(_GO_VERSION) \
 	  /bin/bash -c "cd /etcd && /certs-wildcard/run.sh && rm -rf m*.etcd"
-
-# example workflow for common name + auth
-# TODO: make this as tests
-# make docker-dns-example-certs-common-name-run -f ./hack/scripts-dev/Makefile
-docker-dns-example-certs-common-name-run:
-	$(info GO_VERSION: $(_GO_VERSION))
-	$(info HOST_TMP_DIR: $(HOST_TMP_DIR))
-	$(info TMP_DIR_MOUNT_FLAG: $(_TMP_DIR_MOUNT_FLAG))
-	docker run \
-	  --rm \
-	  --tty \
-	  --dns 127.0.0.1 \
-	  $(_TMP_DIR_MOUNT_FLAG) \
-	  --mount type=bind,source=`pwd`/bin,destination=/etcd \
-	  --mount type=bind,source=`pwd`/hack/scripts-dev/docker-dns/certs-common-name,destination=/certs-common-name \
-	  gcr.io/etcd-development/etcd-dns-test:go$(_GO_VERSION) \
-	  /bin/bash -c "cd /etcd && /certs-common-name/run.sh && rm -rf m*.etcd"

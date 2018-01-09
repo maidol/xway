@@ -15,7 +15,6 @@
 package integration
 
 import (
-	"context"
 	"math/rand"
 	"strings"
 	"testing"
@@ -26,6 +25,8 @@ import (
 	"github.com/coreos/etcd/integration"
 	"github.com/coreos/etcd/pkg/testutil"
 	"github.com/coreos/etcd/pkg/transport"
+
+	"golang.org/x/net/context"
 )
 
 var (

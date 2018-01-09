@@ -15,7 +15,6 @@
 package integration
 
 import (
-	"context"
 	"fmt"
 	"math/rand"
 	"reflect"
@@ -30,6 +29,7 @@ import (
 	mvccpb "github.com/coreos/etcd/mvcc/mvccpb"
 	"github.com/coreos/etcd/pkg/testutil"
 
+	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
@@ -515,9 +515,6 @@ func TestWatchCompactRevision(t *testing.T) {
 	}
 	if wresp.Err() != rpctypes.ErrCompacted {
 		t.Fatalf("wresp.Err() expected %v, but got %v", rpctypes.ErrCompacted, wresp.Err())
-	}
-	if !wresp.Canceled {
-		t.Fatalf("wresp.Canceled expected true, got %+v", wresp)
 	}
 
 	// ensure the channel is closed

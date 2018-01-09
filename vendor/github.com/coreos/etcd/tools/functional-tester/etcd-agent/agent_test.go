@@ -15,6 +15,7 @@
 package main
 
 import (
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"syscall"
@@ -26,10 +27,10 @@ var etcdPath = filepath.Join(os.Getenv("GOPATH"), "bin/etcd")
 func TestAgentStart(t *testing.T) {
 	defer os.Remove("etcd.log")
 
-	a := newTestAgent(t)
+	a, dir := newTestAgent(t)
 	defer a.terminate()
 
-	err := a.start()
+	err := a.start("--data-dir", dir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -38,10 +39,10 @@ func TestAgentStart(t *testing.T) {
 func TestAgentRestart(t *testing.T) {
 	defer os.Remove("etcd.log")
 
-	a := newTestAgent(t)
+	a, dir := newTestAgent(t)
 	defer a.terminate()
 
-	err := a.start()
+	err := a.start("--data-dir", dir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -59,9 +60,9 @@ func TestAgentRestart(t *testing.T) {
 func TestAgentTerminate(t *testing.T) {
 	defer os.Remove("etcd.log")
 
-	a := newTestAgent(t)
+	a, dir := newTestAgent(t)
 
-	err := a.start()
+	err := a.start("--data-dir", dir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -71,17 +72,21 @@ func TestAgentTerminate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if _, err := os.Stat(a.dataDir()); !os.IsNotExist(err) {
+	if _, err := os.Stat(dir); !os.IsNotExist(err) {
 		t.Fatal(err)
 	}
 }
 
-// newTestAgent creates a test agent
-func newTestAgent(t *testing.T) *Agent {
+// newTestAgent creates a test agent and with a temp data directory.
+func newTestAgent(t *testing.T) (*Agent, string) {
 	a, err := newAgent(AgentConfig{EtcdPath: etcdPath, LogDir: "etcd.log"})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	return a
+	dir, err := ioutil.TempDir(os.TempDir(), "etcd-agent")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return a, dir
 }

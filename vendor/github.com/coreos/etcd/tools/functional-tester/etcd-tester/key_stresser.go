@@ -15,20 +15,20 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"math/rand"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/coreos/etcd/etcdserver"
-	"github.com/coreos/etcd/etcdserver/api/v3rpc/rpctypes"
-	pb "github.com/coreos/etcd/etcdserver/etcdserverpb"
-
+	"golang.org/x/net/context" // grpc does a comparison on context.Cancel; can't use "context" package
 	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/transport"
+
+	"github.com/coreos/etcd/etcdserver"
+	"github.com/coreos/etcd/etcdserver/api/v3rpc/rpctypes"
+	pb "github.com/coreos/etcd/etcdserver/etcdserverpb"
 )
 
 type keyStresser struct {
@@ -106,7 +106,7 @@ func (s *keyStresser) run(ctx context.Context) {
 			continue
 		}
 
-		switch rpctypes.ErrorDesc(err) {
+		switch grpc.ErrorDesc(err) {
 		case context.DeadlineExceeded.Error():
 			// This retries when request is triggered at the same time as
 			// leader failure. When we terminate the leader, the request to

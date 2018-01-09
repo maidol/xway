@@ -38,62 +38,32 @@ func TestCtlV3WatchInteractivePeerTLS(t *testing.T) {
 	testCtl(t, watchTest, withInteractive(), withCfg(configPeerTLS))
 }
 
-type kvExec struct {
-	key, val   string
-	execOutput string
-}
-
 func watchTest(cx ctlCtx) {
 	tests := []struct {
 		puts []kv
 		args []string
 
-		wkv []kvExec
+		wkv []kv
 	}{
 		{ // watch 1 key
 			[]kv{{"sample", "value"}},
 			[]string{"sample", "--rev", "1"},
-			[]kvExec{{key: "sample", val: "value"}},
-		},
-		{ // watch 1 key with "echo watch event received"
 			[]kv{{"sample", "value"}},
-			[]string{"sample", "--rev", "1", "--", "echo", "watch event received"},
-			[]kvExec{{key: "sample", val: "value", execOutput: "watch event received"}},
-		},
-		{ // watch 1 key with "echo watch event received"
-			[]kv{{"sample", "value"}},
-			[]string{"--rev", "1", "sample", "--", "echo", "watch event received"},
-			[]kvExec{{key: "sample", val: "value", execOutput: "watch event received"}},
-		},
-		{ // watch 1 key with "echo \"Hello World!\""
-			[]kv{{"sample", "value"}},
-			[]string{"--rev", "1", "sample", "--", "echo", "\"Hello World!\""},
-			[]kvExec{{key: "sample", val: "value", execOutput: "Hello World!"}},
-		},
-		{ // watch 1 key with "echo watch event received"
-			[]kv{{"sample", "value"}},
-			[]string{"sample", "samplx", "--rev", "1", "--", "echo", "watch event received"},
-			[]kvExec{{key: "sample", val: "value", execOutput: "watch event received"}},
-		},
-		{ // watch 1 key with "echo watch event received"
-			[]kv{{"sample", "value"}},
-			[]string{"sample", "--rev", "1", "samplx", "--", "echo", "watch event received"},
-			[]kvExec{{key: "sample", val: "value", execOutput: "watch event received"}},
 		},
 		{ // watch 3 keys by prefix
 			[]kv{{"key1", "val1"}, {"key2", "val2"}, {"key3", "val3"}},
 			[]string{"key", "--rev", "1", "--prefix"},
-			[]kvExec{{key: "key1", val: "val1"}, {key: "key2", val: "val2"}, {key: "key3", val: "val3"}},
+			[]kv{{"key1", "val1"}, {"key2", "val2"}, {"key3", "val3"}},
 		},
 		{ // watch by revision
 			[]kv{{"etcd", "revision_1"}, {"etcd", "revision_2"}, {"etcd", "revision_3"}},
 			[]string{"etcd", "--rev", "2"},
-			[]kvExec{{key: "etcd", val: "revision_2"}, {key: "etcd", val: "revision_3"}},
+			[]kv{{"etcd", "revision_2"}, {"etcd", "revision_3"}},
 		},
 		{ // watch 3 keys by range
 			[]kv{{"key1", "val1"}, {"key3", "val3"}, {"key2", "val2"}},
 			[]string{"key", "key3", "--rev", "1"},
-			[]kvExec{{key: "key1", val: "val1"}, {key: "key2", val: "val2"}},
+			[]kv{{"key1", "val1"}, {"key2", "val2"}},
 		},
 	}
 
@@ -127,7 +97,7 @@ func setupWatchArgs(cx ctlCtx, args []string) []string {
 	return cmdArgs
 }
 
-func ctlV3Watch(cx ctlCtx, args []string, kvs ...kvExec) error {
+func ctlV3Watch(cx ctlCtx, args []string, kvs ...kv) error {
 	cmdArgs := setupWatchArgs(cx, args)
 
 	proc, err := spawnCmd(cmdArgs)
@@ -148,11 +118,6 @@ func ctlV3Watch(cx ctlCtx, args []string, kvs ...kvExec) error {
 		}
 		if _, err = proc.Expect(elem.val); err != nil {
 			return err
-		}
-		if elem.execOutput != "" {
-			if _, err = proc.Expect(elem.execOutput); err != nil {
-				return err
-			}
 		}
 	}
 	return proc.Stop()
