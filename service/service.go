@@ -18,6 +18,7 @@ import (
 	"xway/proxy"
 	"xway/router"
 	"xway/router/xrouter"
+	"xway/utils/redis"
 )
 
 const (
@@ -69,6 +70,12 @@ func NewService(options Options, registry *plugin.Registry) *Service {
 		options:  options,
 		registry: registry,
 	}
+}
+
+func (s *Service) initDB() error {
+	p := redis.Pool(redis.Options{MaxIdle: 10, Address: "192.168.2.163:6379", Password: "ciwongrds"})
+	s.registry.SetRedisPool(p)
+	return nil
 }
 
 func (s *Service) initEngine() error {
@@ -153,7 +160,7 @@ func (s *Service) initProxy() error {
 	// negroni
 	n := negroni.New()
 	// context
-	n.UseFunc(xwaymw.DefaultXWayContext())
+	n.UseFunc(xwaymw.XWayContext(xwaymw.ContextMWOption{Registry: s.registry}))
 	// router
 	r := xrouter.New(snp, s.registry, newRouterC)
 	s.router = r.(router.Router)
@@ -191,6 +198,9 @@ func (s *Service) initProxy() error {
 }
 
 func (s *Service) load() error {
+	if err := s.initDB(); err != nil {
+		return err
+	}
 	if err := s.initEngine(); err != nil {
 		return err
 	}
@@ -203,6 +213,8 @@ func (s *Service) load() error {
 
 // Run ...
 func Run(registry *plugin.Registry) error {
+	defer registry.Close()
+
 	fmt.Println("[Running......]")
 	// 加载配置
 	options, err := ParseCommandLine()

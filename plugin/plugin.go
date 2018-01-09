@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"xway/router"
 
+	"github.com/garyburd/redigo/redis"
 	"github.com/urfave/negroni"
 )
 
@@ -12,6 +13,7 @@ type Registry struct {
 	router router.Router
 	// Middlewares map[string]Middleware
 	middlewareSpecs map[string]*MiddlewareSpec
+	redisPool       *redis.Pool
 }
 
 // MiddlewareSpec ...
@@ -54,4 +56,18 @@ func (r *Registry) SetRouter(router router.Router) error {
 
 func (r *Registry) GetRouter() router.Router {
 	return r.router
+}
+
+func (r *Registry) SetRedisPool(p *redis.Pool) {
+	r.redisPool = p
+}
+
+func (r *Registry) GetRedisPool() *redis.Pool {
+	return r.redisPool
+}
+
+func (r *Registry) Close() {
+	if r.redisPool != nil {
+		r.redisPool.Close()
+	}
 }

@@ -2,6 +2,7 @@ package xwaycontext
 
 import (
 	"context"
+	"xway/plugin"
 )
 
 type ContextKey struct {
@@ -11,6 +12,7 @@ type ContextKey struct {
 type XWayContext struct {
 	// originalRequest *http.Request
 	Map      map[interface{}]interface{}
+	Registry *plugin.Registry
 	UserName string
 	Password string
 }
