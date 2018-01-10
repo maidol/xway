@@ -82,7 +82,7 @@ func (at *AuthToken) ServeHTTP(rw http.ResponseWriter, r *http.Request, next htt
 			fmt.Printf("[AuthToken.ServeHTTP] rdc.Close err: %v\n", err)
 		}
 	}()
-	// TODO: 读取token, 验证权限
+	// 读取token, 验证权限
 	tk := "cw:gateway:token:" + qd.Token
 	v, err := rdc.Do("HGETALL", tk)
 	if err != nil {

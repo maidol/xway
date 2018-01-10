@@ -26,6 +26,7 @@ func New(cfg en.Frontend, registry *plugin.Registry) *T {
 	ngi := negroni.New()
 	switch cfg.Type {
 	case en.HTTP:
+		// TODO: 根据定义的配置创建中间件实例
 		config := cfg.Config.(en.HTTPFrontendSettings)
 		for _, mwcfg := range config.Auth {
 			spec := registry.GetMW(mwcfg)

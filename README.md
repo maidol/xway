@@ -40,4 +40,6 @@ etcdctl put /xway/frontends/f2/frontend '{\"routeId\":\"f2\",\"domainHost\":\"ea
 etcdctl put /xway/frontends/f3/frontend '{\"routeId\":\"f3\",\"domainHost\":\"eapi.jiaofucloud.cn\",\"routeUrl\":\"/v5/epaperwork/getReceiveBookchapters/\",\"redirectHost\":\"192.168.2.162:8898\",\"forwardUrl\":\"/epaperwork/v2/getReceiveBookchapters/\",\"type\":\"http\",\"config\":{\"auth\":[\"oauth\"],\"operation\":[{\"rate\":\"0\"}]}}'
 
 etcdctl put /xway/frontends/f4/frontend '{\"routeId\":\"f4\",\"domainHost\":\"eapi.jiaofucloud.cn\",\"routeUrl\":\"/nomux/hello/\",\"redirectHost\":\"192.168.2.102:8708\",\"forwardUrl\":\"/\",\"type\":\"http\",\"config\":{\"auth\":[\"oauth\"],\"operation\":[{\"rate\":\"0\"}]}}'
+
+etcdctl put /xway/frontends/f5/frontend '{\"routeId\":\"f5\",\"domainHost\":\"eapi.jiaofucloud.cn\",\"routeUrl\":\"/oauth/\",\"redirectHost\":\"192.168.2.162:8000\",\"forwardUrl\":\"/oauth/\",\"type\":\"http\",\"config\":{\"auth\":[],\"operation\":[{\"rate\":\"0\"}]}}'
 ```
