@@ -16,6 +16,14 @@
 
 * 2018.01.23 ~ 日志模块实现
 
+## 构建
+
+----
+
+```bash
+docker run --rm -it -v "$PWD":/go/src/xway -e CGO_ENABLED=0 -e GOOS=linux -w /go/src/xway golang:latest go build -a -installsuffix cgo -o app .
+```
+
 ## etcdctl
 
 ----

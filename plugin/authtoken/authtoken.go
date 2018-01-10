@@ -37,6 +37,7 @@ func (at *AuthToken) ServeHTTP(rw http.ResponseWriter, r *http.Request, next htt
 	// fmt.Println(p.ActiveCount(), p.IdleCount(), p.Stats())
 	rdc := p.Get()
 	defer func() {
+		// 重要: 释放客户端
 		if err := rdc.Close(); err != nil {
 			// TODO: 处理错误
 			fmt.Printf("[AuthToken.ServeHTTP] rdc.Close err: %v\n", err)
@@ -59,7 +60,7 @@ func (at *AuthToken) ServeHTTP(rw http.ResponseWriter, r *http.Request, next htt
 	if v != "" {
 	}
 	// fmt.Printf("GO_AuthToken %v\n", v)
-	// TODO: 读取token
+	// TODO: 读取token, 验证权限
 	_, pwd, ok := r.BasicAuth()
 	if !ok || pwd != "123456" {
 		// TODO: 产生错误退出
