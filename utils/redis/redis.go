@@ -18,9 +18,6 @@ type Options struct {
 }
 
 func Pool(opt Options) *redis.Pool {
-	// p := redis.NewPool(func() (redis.Conn, error) {
-	// 	return redis.Dial("tcp", opt.Address, redis.DialPassword(opt.Password), redis.DialDatabase(opt.DB), redis.DialKeepAlive(5*time.Minute), redis.DialConnectTimeout(1*time.Minute))
-	// }, opt.MaxIdle)
 	p := &redis.Pool{
 		Dial: func() (redis.Conn, error) {
 			return redis.Dial("tcp", opt.Address, redis.DialPassword(opt.Password), redis.DialDatabase(opt.DB))
