@@ -43,3 +43,7 @@
 [[constraint]]
   name = "github.com/garyburd/redigo"
   version = "1.4.0"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/mholt/binding"

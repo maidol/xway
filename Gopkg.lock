@@ -8,7 +8,7 @@
 
 [[projects]]
   name = "github.com/coreos/etcd"
-  packages = ["auth/authpb","client","clientv3","etcdserver/api/v3rpc/rpctypes","etcdserver/etcdserverpb","mvcc/mvccpb"]
+  packages = ["auth/authpb","clientv3","etcdserver/api/v3rpc/rpctypes","etcdserver/etcdserverpb","mvcc/mvccpb"]
   revision = "95a726a27e09030f9ccbd9982a1508f5a6d25ada"
   version = "v3.2.13"
 
@@ -35,6 +35,12 @@
   name = "github.com/ivpusic/grpool"
   packages = ["."]
   revision = "28957a27c9441f178d644aa598bac0aad4dd7bba"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/mholt/binding"
+  packages = ["."]
+  revision = "f4f58459f5f7f67cb8fb4a72a905a4ca63fead83"
 
 [[projects]]
   name = "github.com/sirupsen/logrus"
@@ -93,6 +99,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "51da9ca9a54139ed45de20e4c2404afb766c1cf6aca4ebf1b92991d393b0509c"
+  inputs-digest = "3e190f565f9659b0c8bfb37003226f0fc9a19f0d35b86181c181338ddb07e4fe"
   solver-name = "gps-cdcl"
   solver-version = 1

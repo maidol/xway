@@ -16,6 +16,7 @@ var CodeMsg = map[int]string{
 	ECodeProxyFailed:   "服务器错误",
 	ECodeUnauthorized:  "未认证的请求",
 	ECodeInternal:      "服务器内部错误",
+	ECodeParamsError:   "请求参数错误",
 }
 
 // CodeStatus ...
@@ -28,6 +29,7 @@ var CodeStatus = map[int]int{
 	ECodeTestFailed:    http.StatusPreconditionFailed,
 	ECodeProxyFailed:   http.StatusBadGateway,
 	ECodeInternal:      http.StatusInternalServerError,
+	ECodeParamsError:   http.StatusBadRequest,
 }
 
 const (
@@ -51,4 +53,5 @@ const (
 	ECodeTestFailed    = 104
 	ECodeProxyFailed   = 105
 	ECodeInternal      = 106
+	ECodeParamsError   = 107
 )
