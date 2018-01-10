@@ -43,11 +43,18 @@ func New(cfg en.Frontend, registry *plugin.Registry) *T {
 // ServeHTTP implements negroni.Handler.
 func (fe *T) ServeHTTP(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 	fe.handler.ServeHTTP(w, r)
-	xwayCtx := xwaycontext.DefaultXWayContext(r.Context())
-	err := xwayCtx.Map["error"]
-	if err != nil {
-		// 中间件验证不通过, 返回
+	if hasError(r) {
+		// 中间件错误验证不通过, 返回
 		return
 	}
 	next(w, r)
+}
+
+func hasError(r *http.Request) bool {
+	xwayCtx := xwaycontext.DefaultXWayContext(r.Context())
+	err := xwayCtx.Map["error"]
+	if err != nil {
+		return true
+	}
+	return false
 }
