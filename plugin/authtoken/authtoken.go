@@ -63,13 +63,18 @@ func New(opt interface{}) negroni.Handler {
 	}
 }
 
+func errorReqHandler(rw http.ResponseWriter, r *http.Request, err *xerror.Error) {
+	xwayCtx := xwaycontext.DefaultXWayContext(r.Context())
+	xwayCtx.Map["error"] = err
+	err.Write(rw)
+}
+
 func (at *AuthToken) ServeHTTP(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 	xwayCtx := xwaycontext.DefaultXWayContext(r.Context())
 	qd := new(QueryData)
 	if errs := binding.URL(r, qd); errs != nil {
-		xwayCtx.Map["error"] = errs
 		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeParamsError, errs.Error())
-		e.Write(rw)
+		errorReqHandler(rw, r, e)
 		return
 	}
 	p := xwayCtx.Registry.GetRedisPool()
@@ -87,34 +92,29 @@ func (at *AuthToken) ServeHTTP(rw http.ResponseWriter, r *http.Request, next htt
 	v, err := rdc.Do("HGETALL", tk)
 	if err != nil {
 		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeInternal, err.Error())
-		xwayCtx.Map["error"] = e
-		e.Write(rw)
+		errorReqHandler(rw, r, e)
 		return
 	}
 	m, err := redis.StringMap(v, err)
 	if err != nil {
 		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeInternal, err.Error())
-		xwayCtx.Map["error"] = e
-		e.Write(rw)
+		errorReqHandler(rw, r, e)
 		return
 	}
 	if m == nil || len(m) == 0 {
-		err := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeUnauthorized, "未找到有效token")
-		xwayCtx.Map["error"] = err
-		err.Write(rw)
+		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeUnauthorized, "未找到有效token")
+		errorReqHandler(rw, r, e)
 		return
 	}
 	expireDate, err := strconv.Atoi(m["expireDate"])
 	if err != nil {
-		err := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeInternal, err.Error()+` [strconv.Atoi(m["expireDate"])转换失败]`)
-		xwayCtx.Map["error"] = err
-		err.Write(rw)
+		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeInternal, err.Error()+` [strconv.Atoi(m["expireDate"])转换失败]`)
+		errorReqHandler(rw, r, e)
 		return
 	}
 	if int64(expireDate) < time.Now().Unix() {
-		err := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeUnauthorized, "token已过期")
-		xwayCtx.Map["error"] = err
-		err.Write(rw)
+		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeUnauthorized, "token已过期")
+		errorReqHandler(rw, r, e)
 		return
 	}
 	r.SetBasicAuth(m["userId"], "123456")
