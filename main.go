@@ -5,6 +5,8 @@ import (
 	"runtime"
 	"xway/plugin/registry"
 	"xway/service"
+
+	_ "github.com/go-sql-driver/mysql"
 )
 
 func main() {

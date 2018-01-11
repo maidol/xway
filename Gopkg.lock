@@ -20,6 +20,12 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/go-sql-driver/mysql"
+  packages = ["."]
+  revision = "4a0c3d73d8579f9fc535cf5e654a651cbd57dd6e"
+
+[[projects]]
+  branch = "master"
   name = "github.com/golang/protobuf"
   packages = ["proto","protoc-gen-go/descriptor","ptypes","ptypes/any","ptypes/duration","ptypes/timestamp"]
   revision = "1e59b77b52bf8e4b449a57e6f79f21226d571845"
@@ -85,6 +91,12 @@
   revision = "e19ae1496984b1c655b8044a65c0300a3c878dd3"
 
 [[projects]]
+  name = "google.golang.org/appengine"
+  packages = ["cloudsql"]
+  revision = "150dc57a1b433e64154302bdc40b6bb8aefa313a"
+  version = "v1.0.0"
+
+[[projects]]
   branch = "master"
   name = "google.golang.org/genproto"
   packages = ["googleapis/api/annotations","googleapis/rpc/status"]
@@ -99,6 +111,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "3e190f565f9659b0c8bfb37003226f0fc9a19f0d35b86181c181338ddb07e4fe"
+  inputs-digest = "4938c2fc0e5af8994d136693fa475399d0807844af78d1509694dd37c6f31788"
   solver-name = "gps-cdcl"
   solver-version = 1

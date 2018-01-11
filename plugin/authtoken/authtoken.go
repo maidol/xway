@@ -2,12 +2,16 @@ package authtoken
 
 import (
 	"fmt"
+	"math"
 	"net/http"
+	"sort"
 	"strconv"
+	"strings"
 	"time"
 	"xway/context"
 	"xway/enum"
 	xerror "xway/error"
+	xcrypto "xway/utils/crypto"
 
 	"github.com/garyburd/redigo/redis"
 	"github.com/mholt/binding"
@@ -26,6 +30,8 @@ type QueryData struct {
 	Token    string
 }
 
+// 可添加自定义验证
+// 可集成https://github.com/asaskevich/govalidator
 // func (qd *QueryData) Validate(req *http.Request) error {
 // 	if qd.Token == "" {
 // 		return binding.Errors{
@@ -37,18 +43,48 @@ type QueryData struct {
 
 func (qd *QueryData) FieldMap(req *http.Request) binding.FieldMap {
 	return binding.FieldMap{
-		// &qd.ClientId: binding.Field{
-		// 	Form:         "clientId",
-		// 	Required:     true,
-		// 	ErrorMessage: "clitenId不能为空",
-		// },
-		&qd.ClientId: "clientId",
+		&qd.ClientId: binding.Field{
+			Form:         "clientId",
+			Required:     true,
+			ErrorMessage: " clitenId不能为空",
+		},
 		&qd.Token: binding.Field{
 			Form:         "accessToken",
 			Required:     true,
-			ErrorMessage: "accessToken不能为空",
+			ErrorMessage: " accessToken不能为空",
 		},
 	}
+}
+
+type HeaderData struct {
+	ClientId string
+	TimeLine int64
+	Sign     string
+}
+
+func (hd *HeaderData) FieldMap(req *http.Request) binding.FieldMap {
+	return binding.FieldMap{
+		&hd.ClientId: binding.Field{
+			Form:         "Clientid",
+			Required:     true,
+			ErrorMessage: " clientid不能为空",
+		},
+		&hd.TimeLine: binding.Field{
+			Form:         "Timeline",
+			Required:     true,
+			ErrorMessage: " timeline不能为空, 且必须为数值",
+		},
+		&hd.Sign: binding.Field{
+			Form:         "Sign",
+			Required:     true,
+			ErrorMessage: " sign不能为空",
+		},
+	}
+}
+
+type appClient struct {
+	clientId   string
+	privateKey string
 }
 
 // New ...
@@ -69,11 +105,12 @@ func errorReqHandler(rw http.ResponseWriter, r *http.Request, err *xerror.Error)
 	err.Write(rw)
 }
 
-func (at *AuthToken) ServeHTTP(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
+func accessToken(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 	xwayCtx := xwaycontext.DefaultXWayContext(r.Context())
+	// 验证请求参数
 	qd := new(QueryData)
 	if errs := binding.URL(r, qd); errs != nil {
-		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeParamsError, errs.Error())
+		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeParamsError, "请求url信息 "+errs.Error())
 		errorReqHandler(rw, r, e)
 		return
 	}
@@ -106,6 +143,11 @@ func (at *AuthToken) ServeHTTP(rw http.ResponseWriter, r *http.Request, next htt
 		errorReqHandler(rw, r, e)
 		return
 	}
+	if m["clientId"] != qd.ClientId {
+		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeParamsError, "clientId与accessToken不对应")
+		errorReqHandler(rw, r, e)
+		return
+	}
 	expireDate, err := strconv.Atoi(m["expireDate"])
 	if err != nil {
 		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeInternal, err.Error()+` [strconv.Atoi(m["expireDate"])转换失败]`)
@@ -119,4 +161,84 @@ func (at *AuthToken) ServeHTTP(rw http.ResponseWriter, r *http.Request, next htt
 	}
 	r.SetBasicAuth(m["userId"], "123456")
 	next(rw, r)
+}
+
+func clientCredentials(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
+	fmt.Println(r.URL.Path)
+	// 验证请求参数
+	hd := new(HeaderData)
+	if errs := binding.Header(r, hd); errs != nil {
+		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeParamsError, "请求头部信息 "+errs.Error())
+		errorReqHandler(rw, r, e)
+		return
+	}
+	// 比较时间戳
+	if math.Abs(float64(time.Now().Unix()-int64(hd.TimeLine))) > 180000000 { //时间戳允许最大误差值为±180秒
+		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeParamsError, "参数timeLine验证失败,请检查服务器时间")
+		errorReqHandler(rw, r, e)
+		return
+	}
+	// TODO: 比较签名clientId, timeLine, sign, path, query
+	// 查询clientInfo(目前from mysql)
+	xwayCtx := xwaycontext.DefaultXWayContext(r.Context())
+	db := xwayCtx.Registry.GetDBPool()
+	row := db.QueryRow("select clientId, privateKey from apps where clientId=?", hd.ClientId)
+	app := appClient{}
+	err := row.Scan(&app.clientId, &app.privateKey)
+	if err != nil {
+		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeInternal, "row.Scan err "+err.Error())
+		errorReqHandler(rw, r, e)
+		return
+	}
+
+	text := generateOriginalText4Sign(hd, r)
+	if s, b := checkHamcSign(text, hd.Sign, app.privateKey); !b {
+		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeHmacsha1SignError, "sign签名不匹配: "+hd.Sign+", 正确签名: "+s)
+		errorReqHandler(rw, r, e)
+		return
+	}
+
+	next(rw, r)
+}
+
+func checkHamcSign(content, sign string, key string) (string, bool) {
+	s := xcrypto.HmacSha1(content, key, "hex")
+	if s == sign {
+		return s, true
+	}
+	return s, false
+}
+
+func generateOriginalText4Sign(hd *HeaderData, r *http.Request) string {
+	originalObj := map[string]string{"timeLime": string(hd.TimeLine), "path": r.URL.Path}
+	keys := []string{"timeLine", "path"}
+	vals := []string{}
+	qs := r.URL.Query()
+	for k, strs := range qs {
+		v := strs[0]
+		originalObj[k] = v
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, v := range keys {
+		vals = append(vals, v+":"+originalObj[v])
+	}
+	text := strings.Join(vals, "&")
+	return text
+}
+
+func (at *AuthToken) ServeHTTP(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
+	grantType := r.URL.Query().Get("grantType")
+	switch grantType {
+	case "":
+		fallthrough
+	case "accesstoken":
+		accessToken(rw, r, next)
+	case "clientcredentials":
+		clientCredentials(rw, r, next)
+	default:
+		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeUnauthorized, "不支持的授权模式: "+grantType)
+		errorReqHandler(rw, r, e)
+		return
+	}
 }

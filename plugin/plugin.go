@@ -1,6 +1,7 @@
 package plugin
 
 import (
+	"database/sql"
 	"fmt"
 	"xway/router"
 
@@ -14,6 +15,7 @@ type Registry struct {
 	// Middlewares map[string]Middleware
 	middlewareSpecs map[string]*MiddlewareSpec
 	redisPool       *redis.Pool
+	dbPool          *sql.DB
 }
 
 // MiddlewareSpec ...
@@ -66,8 +68,20 @@ func (r *Registry) GetRedisPool() *redis.Pool {
 	return r.redisPool
 }
 
+func (r *Registry) SetDBPool(p *sql.DB) {
+	r.dbPool = p
+}
+
+func (r *Registry) GetDBPool() *sql.DB {
+	return r.dbPool
+}
+
 func (r *Registry) Close() {
 	if r.redisPool != nil {
 		r.redisPool.Close()
+	}
+
+	if r.dbPool != nil {
+		r.dbPool.Close()
 	}
 }

@@ -47,3 +47,7 @@
 [[constraint]]
   branch = "master"
   name = "github.com/mholt/binding"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/go-sql-driver/mysql"

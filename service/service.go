@@ -18,6 +18,7 @@ import (
 	"xway/proxy"
 	"xway/router"
 	"xway/router/xrouter"
+	"xway/utils/mysql"
 	"xway/utils/redis"
 )
 
@@ -75,6 +76,15 @@ func NewService(options Options, registry *plugin.Registry) *Service {
 func (s *Service) initDB() error {
 	p := redis.Pool(redis.Options{Address: "192.168.2.163:6379", Password: "ciwongrds", MaxIdle: 300, IdleTimeout: 4 * time.Minute})
 	s.registry.SetRedisPool(p)
+	fmt.Println("[init redis success]")
+
+	db, err := mysql.NewPool(mysql.Options{UserName: "ciwong_sabin", Password: "ciwong2017", Address: "192.168.2.117:3306", DBName: "cw_api_gateway", MaxIdle: 100})
+	if err != nil {
+		return err
+	}
+	s.registry.SetDBPool(db)
+	fmt.Println("[init mysql success]")
+
 	return nil
 }
 
@@ -201,19 +211,27 @@ func (s *Service) load() error {
 	if err := s.initDB(); err != nil {
 		return err
 	}
+	fmt.Println("[initDB success]")
+
 	if err := s.initEngine(); err != nil {
 		return err
 	}
+	fmt.Println("[initEngine success]")
 
 	if err := s.initProxy(); err != nil {
 		return err
 	}
+	fmt.Println("[initProxy success]")
+
 	return nil
 }
 
 // Run ...
 func Run(registry *plugin.Registry) error {
-	defer registry.Close()
+	defer func() {
+		// 启动发生错误, 或程序退出时的处理
+		registry.Close()
+	}()
 
 	fmt.Println("[Running......]")
 	// 加载配置
@@ -230,6 +248,7 @@ func Run(registry *plugin.Registry) error {
 		return fmt.Errorf("service start failure: %s", err)
 	}
 	// start server
+	fmt.Println("[start server]")
 	s.ngiSvc.Run(":" + fmt.Sprint(s.options.Port))
 	return nil
 }
