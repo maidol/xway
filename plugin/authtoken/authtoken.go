@@ -99,6 +99,8 @@ func New(opt interface{}) negroni.Handler {
 	}
 }
 
+// errorReqHandler process err
+// 前端中间件产生的错误必须统一由errorReHandler处理, xwayCtx.Map["error"] = err用以阻断路由xrouter下一层的处理
 func errorReqHandler(rw http.ResponseWriter, r *http.Request, err *xerror.Error) {
 	xwayCtx := xwaycontext.DefaultXWayContext(r.Context())
 	xwayCtx.Map["error"] = err
