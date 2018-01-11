@@ -164,7 +164,6 @@ func accessToken(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc)
 }
 
 func clientCredentials(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
-	fmt.Println(r.URL.Path)
 	// 验证请求参数
 	hd := new(HeaderData)
 	if errs := binding.Header(r, hd); errs != nil {
