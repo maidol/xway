@@ -74,11 +74,11 @@ func NewService(options Options, registry *plugin.Registry) *Service {
 }
 
 func (s *Service) initDB() error {
-	p := redis.Pool(redis.Options{Address: "192.168.2.163:6379", Password: "ciwongrds", MaxIdle: 300, IdleTimeout: 4 * time.Minute})
+	p := redis.Pool(redis.Options{Address: "192.168.2.163:6379", Password: "ciwongrds", MaxIdle: 500, IdleTimeout: 4 * time.Minute})
 	s.registry.SetRedisPool(p)
 	// fmt.Println("[registry redis success]")
 
-	db, err := mysql.NewPool(mysql.Options{UserName: "ciwong_sabin", Password: "ciwong2017", Address: "192.168.2.117:3306", DBName: "cw_api_gateway", MaxIdle: 100})
+	db, err := mysql.NewPool(mysql.Options{UserName: "ciwong_sabin", Password: "ciwong2017", Address: "192.168.2.117:3306", DBName: "cw_api_gateway", MaxIdle: 500})
 	if err != nil {
 		return err
 	}
