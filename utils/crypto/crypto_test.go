@@ -8,17 +8,17 @@ import (
 
 var (
 	originalObj = map[string]string{
-		"timeLine":  "1515742156",
+		"timeLine":  "1515750862",
 		"path":      "/oauth/v2/token",
 		"grantType": "clientcredentials",
-		"userName":  "15089829486",
+		"userName":  "70031400",
 		"passWord":  "123456",
 		"clientId":  "20000",
 		"brandId":   "524726977",
 	}
-	originaText = `brandId=524726977&clientId=20000&grantType=clientcredentials&passWord=123456&path=/oauth/v2/token&timeLine=1515742156&userName=15089829486`
+	originaText = `brandId=524726977&clientId=20000&grantType=clientcredentials&passWord=123456&path=/oauth/v2/token&timeLine=1515750862&userName=70031400`
 	key         = "0cd684826127ecf963b87b6939cfe947"
-	target      = "0ea21751feed13dd8c7950979c716d706ff5ca4a"
+	target      = "40555bcf3f65bb35a20d52bc677895808fab726c"
 )
 
 func TestHmacSha1(t *testing.T) {
