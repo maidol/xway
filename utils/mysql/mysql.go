@@ -23,7 +23,7 @@ func NewPool(opt Options) (*sql.DB, error) {
 	if opt.DSN != "" {
 		dsn = opt.DSN
 	} else {
-		dsn = opt.UserName + ":" + opt.Password + "@tcp(" + opt.Address + ")/" + opt.DBName + "?charset=utf8"
+		dsn = opt.UserName + ":" + opt.Password + "@tcp(" + opt.Address + ")/" + opt.DBName + "?collation=utf8mb4_unicode_ci"
 	}
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
