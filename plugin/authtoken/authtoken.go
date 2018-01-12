@@ -174,7 +174,7 @@ func (at *AuthToken) clientCredentials(rw http.ResponseWriter, r *http.Request, 
 		at.RequestError(rw, r, e)
 		return
 	}
-	// TODO: 比较签名clientId, timeLine, sign, path, query
+	// TODO: (计划优化)比较签名clientId, timeLine, sign, path, query
 	// 查询clientInfo(目前from mysql)
 	xwayCtx := xwaycontext.DefaultXWayContext(r.Context())
 	db := xwayCtx.Registry.GetDBPool()
