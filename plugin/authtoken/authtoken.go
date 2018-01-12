@@ -169,7 +169,7 @@ func (at *AuthToken) clientCredentials(rw http.ResponseWriter, r *http.Request, 
 		return
 	}
 	// 比较时间戳
-	if math.Abs(float64(time.Now().Unix()-int64(hd.TimeLine))) > 180000000 { //时间戳允许最大误差值为±180秒
+	if math.Abs(float64(time.Now().Unix()-int64(hd.TimeLine))) > 180 { //时间戳允许最大误差值为±180秒
 		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeParamsError, "参数timeLine验证失败,请检查服务器时间")
 		at.RequestError(rw, r, e)
 		return
@@ -189,7 +189,7 @@ func (at *AuthToken) clientCredentials(rw http.ResponseWriter, r *http.Request, 
 
 	text := generateOriginalText4Sign(hd, r)
 	if s, b := checkHamcSign(text, hd.Sign, app.privateKey); !b {
-		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeHmacsha1SignError, "sign签名不匹配: "+hd.Sign+", 正确签名: "+s)
+		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeHmacsha1SignError, "sign签名不匹配: "+hd.Sign+", 正确签名: "+s+", 原始值: "+text)
 		at.RequestError(rw, r, e)
 		return
 	}
@@ -206,8 +206,14 @@ func checkHamcSign(content, sign string, key string) (string, bool) {
 }
 
 func generateOriginalText4Sign(hd *HeaderData, r *http.Request) string {
-	originalObj := map[string]string{"timeLime": string(hd.TimeLine), "path": r.URL.Path}
-	keys := []string{"timeLine", "path"}
+	timeLineKey := "timeLine"
+	pathKey := "path"
+	pathVal := r.URL.Path
+	if strings.Index(pathVal, "/gateway/") == 0 {
+		pathVal = strings.Replace(pathVal, "/gateway/", "/", 1)
+	}
+	originalObj := map[string]string{timeLineKey: strconv.FormatInt(hd.TimeLine, 10), pathKey: pathVal}
+	keys := []string{timeLineKey, pathKey}
 	vals := []string{}
 	qs := r.URL.Query()
 	for k, strs := range qs {
@@ -217,7 +223,7 @@ func generateOriginalText4Sign(hd *HeaderData, r *http.Request) string {
 	}
 	sort.Strings(keys)
 	for _, v := range keys {
-		vals = append(vals, v+":"+originalObj[v])
+		vals = append(vals, v+"="+originalObj[v])
 	}
 	text := strings.Join(vals, "&")
 	return text
