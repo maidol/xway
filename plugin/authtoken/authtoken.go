@@ -11,6 +11,7 @@ import (
 	"xway/context"
 	"xway/enum"
 	xerror "xway/error"
+	"xway/plugin/handler"
 	xcrypto "xway/utils/crypto"
 
 	"github.com/garyburd/redigo/redis"
@@ -19,6 +20,8 @@ import (
 )
 
 type AuthToken struct {
+	// 统一处理错误
+	handler.StdErrorHandler
 	opt Options
 }
 
@@ -99,21 +102,13 @@ func New(opt interface{}) negroni.Handler {
 	}
 }
 
-// errorReqHandler process err
-// 前端中间件产生的错误必须统一由errorReHandler处理, xwayCtx.Map["error"] = err用以阻断路由xrouter下一层的处理
-func errorReqHandler(rw http.ResponseWriter, r *http.Request, err *xerror.Error) {
-	xwayCtx := xwaycontext.DefaultXWayContext(r.Context())
-	xwayCtx.Map["error"] = err
-	err.Write(rw)
-}
-
-func accessToken(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
+func (at *AuthToken) accessToken(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 	xwayCtx := xwaycontext.DefaultXWayContext(r.Context())
 	// 验证请求参数
 	qd := new(QueryData)
 	if errs := binding.URL(r, qd); errs != nil {
 		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeParamsError, "请求url信息 "+errs.Error())
-		errorReqHandler(rw, r, e)
+		at.RequestError(rw, r, e)
 		return
 	}
 	p := xwayCtx.Registry.GetRedisPool()
@@ -131,52 +126,52 @@ func accessToken(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc)
 	v, err := rdc.Do("HGETALL", tk)
 	if err != nil {
 		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeInternal, err.Error())
-		errorReqHandler(rw, r, e)
+		at.RequestError(rw, r, e)
 		return
 	}
 	m, err := redis.StringMap(v, err)
 	if err != nil {
 		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeInternal, err.Error())
-		errorReqHandler(rw, r, e)
+		at.RequestError(rw, r, e)
 		return
 	}
 	if m == nil || len(m) == 0 {
 		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeUnauthorized, "未找到有效token")
-		errorReqHandler(rw, r, e)
+		at.RequestError(rw, r, e)
 		return
 	}
 	if m["clientId"] != qd.ClientId {
 		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeParamsError, "clientId与accessToken不对应")
-		errorReqHandler(rw, r, e)
+		at.RequestError(rw, r, e)
 		return
 	}
 	expireDate, err := strconv.Atoi(m["expireDate"])
 	if err != nil {
 		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeInternal, err.Error()+` [strconv.Atoi(m["expireDate"])转换失败]`)
-		errorReqHandler(rw, r, e)
+		at.RequestError(rw, r, e)
 		return
 	}
 	if int64(expireDate) < time.Now().Unix() {
 		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeUnauthorized, "token已过期")
-		errorReqHandler(rw, r, e)
+		at.RequestError(rw, r, e)
 		return
 	}
 	r.SetBasicAuth(m["userId"], "123456")
 	next(rw, r)
 }
 
-func clientCredentials(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
+func (at *AuthToken) clientCredentials(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 	// 验证请求参数
 	hd := new(HeaderData)
 	if errs := binding.Header(r, hd); errs != nil {
 		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeParamsError, "请求头部信息 "+errs.Error())
-		errorReqHandler(rw, r, e)
+		at.RequestError(rw, r, e)
 		return
 	}
 	// 比较时间戳
 	if math.Abs(float64(time.Now().Unix()-int64(hd.TimeLine))) > 180000000 { //时间戳允许最大误差值为±180秒
 		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeParamsError, "参数timeLine验证失败,请检查服务器时间")
-		errorReqHandler(rw, r, e)
+		at.RequestError(rw, r, e)
 		return
 	}
 	// TODO: 比较签名clientId, timeLine, sign, path, query
@@ -188,14 +183,14 @@ func clientCredentials(rw http.ResponseWriter, r *http.Request, next http.Handle
 	err := row.Scan(&app.clientId, &app.privateKey)
 	if err != nil {
 		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeInternal, "row.Scan err "+err.Error())
-		errorReqHandler(rw, r, e)
+		at.RequestError(rw, r, e)
 		return
 	}
 
 	text := generateOriginalText4Sign(hd, r)
 	if s, b := checkHamcSign(text, hd.Sign, app.privateKey); !b {
 		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeHmacsha1SignError, "sign签名不匹配: "+hd.Sign+", 正确签名: "+s)
-		errorReqHandler(rw, r, e)
+		at.RequestError(rw, r, e)
 		return
 	}
 
@@ -234,12 +229,12 @@ func (at *AuthToken) ServeHTTP(rw http.ResponseWriter, r *http.Request, next htt
 	case "":
 		fallthrough
 	case "accesstoken":
-		accessToken(rw, r, next)
+		at.accessToken(rw, r, next)
 	case "clientcredentials":
-		clientCredentials(rw, r, next)
+		at.clientCredentials(rw, r, next)
 	default:
 		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeUnauthorized, "不支持的授权模式: "+grantType)
-		errorReqHandler(rw, r, e)
+		at.RequestError(rw, r, e)
 		return
 	}
 }

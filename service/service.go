@@ -76,14 +76,14 @@ func NewService(options Options, registry *plugin.Registry) *Service {
 func (s *Service) initDB() error {
 	p := redis.Pool(redis.Options{Address: "192.168.2.163:6379", Password: "ciwongrds", MaxIdle: 300, IdleTimeout: 4 * time.Minute})
 	s.registry.SetRedisPool(p)
-	fmt.Println("[init redis success]")
+	// fmt.Println("[registry redis success]")
 
 	db, err := mysql.NewPool(mysql.Options{UserName: "ciwong_sabin", Password: "ciwong2017", Address: "192.168.2.117:3306", DBName: "cw_api_gateway", MaxIdle: 100})
 	if err != nil {
 		return err
 	}
 	s.registry.SetDBPool(db)
-	fmt.Println("[init mysql success]")
+	// fmt.Println("[registry mysql success]")
 
 	return nil
 }
@@ -233,7 +233,7 @@ func Run(registry *plugin.Registry) error {
 		registry.Close()
 	}()
 
-	fmt.Println("[Running......]")
+	fmt.Println("[app running......]")
 	// 加载配置
 	options, err := ParseCommandLine()
 	if err != nil {

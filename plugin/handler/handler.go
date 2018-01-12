@@ -8,23 +8,22 @@ import (
 )
 
 type ErrorHandler interface {
-	ServeHTTP(w http.ResponseWriter, req *http.Request, err error)
+	RequestError(w http.ResponseWriter, req *http.Request, err error)
 }
 
-var DefaultHandler ErrorHandler = &StdHandler{}
+var DefaultErrorHandler ErrorHandler = &StdErrorHandler{}
 
-type StdHandler struct {
+type StdErrorHandler struct {
 }
 
-// errorReqHandler process err
-// 前端中间件产生的错误必须统一由errorReHandler处理, xwayCtx.Map["error"] = err用以阻断路由xrouter下一层的处理
-func errorReqHandler(rw http.ResponseWriter, r *http.Request, err *xerror.Error) {
-	xwayCtx := xwaycontext.DefaultXWayContext(r.Context())
-	xwayCtx.Map["error"] = err
-	err.Write(rw)
+func (s *StdErrorHandler) RequestError(w http.ResponseWriter, req *http.Request, err error) {
+	HandleRequestError(w, req, err)
 }
 
-func (s *StdHandler) ServeHTTP(w http.ResponseWriter, req *http.Request, err error) {
+// HandleRequestError process err
+// 中间件产生的错误统一由HandleRequestError处理
+// xwayCtx.Map["error"] = err 用以判断, 阻断下一层的处理(例如路由xrouter下一层的代理proxy)
+func HandleRequestError(w http.ResponseWriter, req *http.Request, err error) {
 	xwayCtx := xwaycontext.DefaultXWayContext(req.Context())
 	xwayCtx.Map["error"] = err
 	if e, ok := err.(*xerror.Error); ok {
@@ -35,9 +34,9 @@ func (s *StdHandler) ServeHTTP(w http.ResponseWriter, req *http.Request, err err
 	e.Write(w)
 }
 
-type ErrorHandlerFunc func(http.ResponseWriter, *http.Request, error)
+// type ErrorHandlerFunc func(http.ResponseWriter, *http.Request, error)
 
-// ServeHTTP calls f(w, r).
-func (f ErrorHandlerFunc) ServeHTTP(w http.ResponseWriter, r *http.Request, err error) {
-	f(w, r, err)
-}
+// // ServeHTTP calls f(w, r).
+// func (f ErrorHandlerFunc) ServeHTTP(w http.ResponseWriter, r *http.Request, err error) {
+// 	f(w, r, err)
+// }

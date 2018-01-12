@@ -56,7 +56,7 @@ func (rt *Router) Remove(f interface{}) error {
 	}
 	sort.Sort(frontendSlice(frontendsTemp))
 
-	fmt.Printf("[重新加载路由表......]\n")
+	fmt.Printf("[重新加载路由表]\n")
 	for _, v := range frontendsTemp {
 		fmt.Printf("[加载路由] %v\n", v)
 		// 变量v在第一次定义时, 地址是确定的(默认不变) fmt.Printf("%p %v\n", &v, &v)
@@ -86,7 +86,7 @@ func (rt *Router) Handle(f interface{}) error {
 	}
 	sort.Sort(frontendSlice(frontendsTemp))
 
-	fmt.Printf("[重新加载路由表......]\n")
+	fmt.Printf("[重新加载路由表]\n")
 	for _, v := range frontendsTemp {
 		fmt.Printf("[加载路由] %v\n", v)
 		// 变量v在第一次定义时, 地址是确定的(默认不变) fmt.Printf("%p %v\n", &v, &v)
@@ -172,7 +172,7 @@ func New(snp *en.Snapshot, registry *plugin.Registry, newRouterC chan bool) negr
 	}
 	sort.Sort(frontendSlice(frontendsTemp))
 
-	fmt.Printf("[加载路由表......]\n")
+	fmt.Printf("[开始加载路由表]\n")
 	for _, v := range frontendsTemp {
 		fmt.Printf("[加载路由] %v\n", v)
 		// 变量v在第一次定义时, 地址是确定的(默认不变) fmt.Printf("%p %v\n", &v, &v)
