@@ -125,6 +125,32 @@ func clientAuth(clientId string, registry *plugin.Registry) (*appClient, error) 
 	return ac, nil
 }
 
+func getToken(token string, registry *plugin.Registry) (map[string]string, error) {
+	p := registry.GetRedisPool()
+	// fmt.Println(p.ActiveCount(), p.IdleCount(), p.Stats())
+	rdc := p.Get()
+	defer func() {
+		// 重要: 释放客户端
+		if err := rdc.Close(); err != nil {
+			// TODO: 处理错误, 记录日志
+			fmt.Printf("[AuthToken getToken] rdc.Close err: %v\n", err)
+		}
+	}()
+	// 读取token, 验证权限
+	tk := "cw:gateway:token:" + token
+	v, err := rdc.Do("HGETALL", tk)
+	if err != nil {
+		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeInternal, err.Error())
+		return nil, e
+	}
+	m, err := redis.StringMap(v, err)
+	if err != nil {
+		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeInternal, err.Error())
+		return nil, e
+	}
+	return m, nil
+}
+
 func (at *AuthToken) accessToken(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 	xwayCtx := xwaycontext.DefaultXWayContext(r.Context())
 	// 验证请求参数
@@ -140,30 +166,13 @@ func (at *AuthToken) accessToken(rw http.ResponseWriter, r *http.Request, next h
 		return
 	}
 
-	p := xwayCtx.Registry.GetRedisPool()
-	// fmt.Println(p.ActiveCount(), p.IdleCount(), p.Stats())
-	rdc := p.Get()
-	defer func() {
-		// 重要: 释放客户端
-		if err := rdc.Close(); err != nil {
-			// TODO: 处理错误
-			fmt.Printf("[AuthToken.ServeHTTP] rdc.Close err: %v\n", err)
-		}
-	}()
-	// 读取token, 验证权限
-	tk := "cw:gateway:token:" + qd.Token
-	v, err := rdc.Do("HGETALL", tk)
+	// token
+	m, err := getToken(qd.Token, xwayCtx.Registry)
 	if err != nil {
-		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeInternal, err.Error())
-		at.RequestError(rw, r, e)
+		at.RequestError(rw, r, err)
 		return
 	}
-	m, err := redis.StringMap(v, err)
-	if err != nil {
-		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeInternal, err.Error())
-		at.RequestError(rw, r, e)
-		return
-	}
+
 	if m == nil || len(m) == 0 {
 		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeUnauthorized, "未找到有效token")
 		at.RequestError(rw, r, e)
