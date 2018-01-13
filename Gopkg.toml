@@ -51,3 +51,7 @@
 [[constraint]]
   branch = "master"
   name = "github.com/go-sql-driver/mysql"
+
+[[constraint]]
+  name = "github.com/gorilla/mux"
+  version = "1.6.0"

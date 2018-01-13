@@ -106,6 +106,8 @@ func New(opt interface{}) negroni.Handler {
 }
 
 // 验证clientId的存在和有效性
+// TODO: (计划优化)
+// 查询clientInfo(目前from mysql)
 func clientAuth(clientId string, registry *plugin.Registry) (*appClient, error) {
 	db := registry.GetDBPool()
 	ac := &appClient{}
@@ -152,7 +154,6 @@ func getToken(token string, registry *plugin.Registry) (map[string]string, error
 }
 
 func (at *AuthToken) accessToken(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
-	xwayCtx := xwaycontext.DefaultXWayContext(r.Context())
 	// 验证请求参数
 	qd := new(QueryData)
 	if errs := binding.URL(r, qd); errs != nil {
@@ -160,19 +161,20 @@ func (at *AuthToken) accessToken(rw http.ResponseWriter, r *http.Request, next h
 		at.RequestError(rw, r, e)
 		return
 	}
-	// TODO: 需要验证clientId的存在和有效性
+	// 验证clientId的存在和有效性
+	xwayCtx := xwaycontext.DefaultXWayContext(r.Context())
 	if _, err := clientAuth(qd.ClientId, xwayCtx.Registry); err != nil {
 		at.RequestError(rw, r, err)
 		return
 	}
 
-	// token
+	// 查找token
 	m, err := getToken(qd.Token, xwayCtx.Registry)
 	if err != nil {
 		at.RequestError(rw, r, err)
 		return
 	}
-
+	// 验证token
 	if m == nil || len(m) == 0 {
 		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeUnauthorized, "未找到有效token")
 		at.RequestError(rw, r, e)
@@ -212,16 +214,14 @@ func (at *AuthToken) clientCredentials(rw http.ResponseWriter, r *http.Request, 
 		at.RequestError(rw, r, e)
 		return
 	}
-	// TODO: (计划优化)比较签名clientId, timeLine, sign, path, query
-	// 查询clientInfo(目前from mysql)
+	// 验证clientId的存在和有效性
 	xwayCtx := xwaycontext.DefaultXWayContext(r.Context())
-	// TODO: 需要验证clientId的存在和有效性
 	app, err := clientAuth(hd.ClientId, xwayCtx.Registry)
 	if err != nil {
 		at.RequestError(rw, r, err)
 		return
 	}
-
+	// TODO: 比较签名, clientId, timeLine, sign, path, query
 	text := generateOriginalText4Sign(hd, r)
 	if s, b := checkHamcSign(text, hd.Sign, app.privateKey); !b {
 		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeHmacsha1SignError, "sign签名不匹配: "+hd.Sign+", 正确签名: "+s+", 原始值: "+text)
