@@ -18,6 +18,7 @@ var CodeMsg = map[int]string{
 	ECodeInternal:          "服务器内部错误",
 	ECodeParamsError:       "请求参数错误",
 	ECodeHmacsha1SignError: "hmacsha1签名错误",
+	ECodeClientException:   "clientId错误或client status异常",
 }
 
 // CodeStatus ...
@@ -32,6 +33,7 @@ var CodeStatus = map[int]int{
 	ECodeInternal:          http.StatusInternalServerError,
 	ECodeParamsError:       http.StatusBadRequest,
 	ECodeHmacsha1SignError: http.StatusUnauthorized,
+	ECodeClientException:   http.StatusBadRequest,
 }
 
 const (
@@ -57,4 +59,5 @@ const (
 	ECodeInternal          = 106
 	ECodeParamsError       = 107
 	ECodeHmacsha1SignError = 108
+	ECodeClientException   = 109
 )

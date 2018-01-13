@@ -78,7 +78,7 @@ func (s *Service) initDB() error {
 	s.registry.SetRedisPool(p)
 	// fmt.Println("[registry redis success]")
 
-	db, err := mysql.NewPool(mysql.Options{UserName: "ciwong_sabin", Password: "ciwong2017", Address: "192.168.2.117:3306", DBName: "cw_api_gateway", MaxIdle: 500, MaxLifetime: 60 * time.Second}) // MaxLifetime的大小不能大于mysql服务器设置的连接会话超时时间
+	db, err := mysql.NewPool(mysql.Options{UserName: "ciwong_sabin", Password: "ciwong2017", Address: "192.168.2.117:3306", DBName: "cw_api_gateway", MaxIdle: 500, MaxLifetime: 60 * time.Second}) // 注意: mysql客户端MaxLifetime的大小不能大于mysql服务端设置的连接会话超时时间
 	if err != nil {
 		return err
 	}

@@ -1,6 +1,7 @@
 package authtoken
 
 import (
+	"database/sql"
 	"fmt"
 	"math"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 	"xway/context"
 	"xway/enum"
 	xerror "xway/error"
+	"xway/plugin"
 	"xway/plugin/handler"
 	xcrypto "xway/utils/crypto"
 
@@ -88,6 +90,7 @@ func (hd *HeaderData) FieldMap(req *http.Request) binding.FieldMap {
 type appClient struct {
 	clientId   string
 	privateKey string
+	status     int
 }
 
 // New ...
@@ -102,6 +105,26 @@ func New(opt interface{}) negroni.Handler {
 	}
 }
 
+// 验证clientId的存在和有效性
+func clientAuth(clientId string, registry *plugin.Registry) (*appClient, error) {
+	db := registry.GetDBPool()
+	ac := &appClient{}
+	row := db.QueryRow("select clientId, privateKey, status from apps where clientId=?", clientId)
+	if err := row.Scan(&ac.clientId, &ac.privateKey, &ac.status); err != nil {
+		if err == sql.ErrNoRows {
+			e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeClientException, err.Error())
+			return nil, e
+		}
+		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeInternal, "row.Scan err "+err.Error())
+		return nil, e
+	}
+	if ac.status != 0 {
+		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeClientException, "client.status!=0")
+		return ac, e
+	}
+	return ac, nil
+}
+
 func (at *AuthToken) accessToken(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 	xwayCtx := xwaycontext.DefaultXWayContext(r.Context())
 	// 验证请求参数
@@ -111,6 +134,12 @@ func (at *AuthToken) accessToken(rw http.ResponseWriter, r *http.Request, next h
 		at.RequestError(rw, r, e)
 		return
 	}
+	// TODO: 需要验证clientId的存在和有效性
+	if _, err := clientAuth(qd.ClientId, xwayCtx.Registry); err != nil {
+		at.RequestError(rw, r, err)
+		return
+	}
+
 	p := xwayCtx.Registry.GetRedisPool()
 	// fmt.Println(p.ActiveCount(), p.IdleCount(), p.Stats())
 	rdc := p.Get()
@@ -177,13 +206,10 @@ func (at *AuthToken) clientCredentials(rw http.ResponseWriter, r *http.Request, 
 	// TODO: (计划优化)比较签名clientId, timeLine, sign, path, query
 	// 查询clientInfo(目前from mysql)
 	xwayCtx := xwaycontext.DefaultXWayContext(r.Context())
-	db := xwayCtx.Registry.GetDBPool()
-	row := db.QueryRow("select clientId, privateKey from apps where clientId=?", hd.ClientId)
-	app := appClient{}
-	err := row.Scan(&app.clientId, &app.privateKey)
+	// TODO: 需要验证clientId的存在和有效性
+	app, err := clientAuth(hd.ClientId, xwayCtx.Registry)
 	if err != nil {
-		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeInternal, "row.Scan err "+err.Error())
-		at.RequestError(rw, r, e)
+		at.RequestError(rw, r, err)
 		return
 	}
 
