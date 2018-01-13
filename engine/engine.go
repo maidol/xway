@@ -9,4 +9,6 @@ type Engine interface {
 
 	// GetRegistry returns registry with the supported plugins. It should be stored by Engine instance.
 	GetRegistry() *plugin.Registry
+
+	ReloadFrontendsFromDB([]map[string]string) error
 }

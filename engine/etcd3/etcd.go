@@ -2,6 +2,7 @@ package etcd3
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
@@ -197,4 +198,38 @@ func (n *ng) parseFrontendChange(e *etcd.Event) (interface{}, error) {
 
 func (n *ng) GetRegistry() *plugin.Registry {
 	return n.registry
+}
+
+func (n *ng) ReloadFrontendsFromDB(fes []map[string]string) error {
+	for _, fe := range fes {
+		switch fe["type"] {
+		case "1":
+			fe["type"] = engine.HTTP
+		default:
+			fe["type"] = engine.HTTP
+		}
+		fe["routeId"] = "f" + fe["routeId"]
+		fkey := n.etcdKey + "/frontends/" + fe["routeId"] + "/frontend"
+		v, err := json.Marshal(fe)
+		if err != nil {
+			return err
+		}
+		fval := strings.Replace(string(v), `\"`, `"`, -1) // 处理字符`\"`
+		fval = strings.Replace(fval, `"config":"`, `"config":`, 1)
+		fval = strings.Replace(fval, `]}","`, `]},"`, 1)
+		fmt.Println(fkey, ":", fval)
+		fmt.Println("------------------------")
+		_, err = n.client.Put(n.context, fkey, fval)
+		if err != nil {
+			fmt.Println(err)
+			for _, fe := range fes {
+				fe["routeId"] = strings.TrimLeft(fe["routeId"], "f")
+			}
+			return err
+		}
+	}
+	for _, fe := range fes {
+		fe["routeId"] = strings.TrimLeft(fe["routeId"], "f")
+	}
+	return nil
 }

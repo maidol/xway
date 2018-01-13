@@ -4,6 +4,14 @@ import (
 	"xway/router"
 )
 
+type StatsProvider interface {
+	FrontendStats(FrontendKey) (*RoundTripStats, error)
+
+	TopFrontends() ([]Frontend, error)
+}
+
+type RoundTripStats struct{}
+
 type Snapshot struct {
 	Index         uint64
 	FrontendSpecs []FrontendSpec

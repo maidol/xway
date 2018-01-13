@@ -3,14 +3,18 @@ package service
 import (
 	"errors"
 	"fmt"
+	"log"
+	"net/http"
 	"os"
 	"sync"
 	"time"
 
 	logrus_logstash "github.com/bshuster-repo/logrus-logstash-hook"
+	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/negroni"
 
+	"xway/api"
 	en "xway/engine"
 	"xway/engine/etcd3"
 	"xway/middleware"
@@ -247,6 +251,13 @@ func Run(registry *plugin.Registry) error {
 	if err := s.load(); err != nil {
 		return fmt.Errorf("service start failure: %s", err)
 	}
+	// api server
+	go func() {
+		router := mux.NewRouter()
+		api.InitProxyController(s.ng, nil, router)
+		fmt.Printf("[apiserver] listening on %s\n", "8799")
+		log.Fatal(http.ListenAndServe("127.0.0.1:8799", router))
+	}()
 	// start server
 	fmt.Println("[start server]")
 	s.ngiSvc.Run(":" + fmt.Sprint(s.options.Port))
