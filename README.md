@@ -1,4 +1,4 @@
-# api gateway
+# API Gateway
 
 ----
 
@@ -8,20 +8,28 @@
 
 ### 第一阶段
 
-* ~ 2018.01.10 现有网关主体功能实现(路由, 认证授权, 代理) 
-* 2018.01.11 ~ 2018.01.18 分离认证授权服务器 
-* 2018.01.19 ~ 2018.01.26 集成测试/优化  
+* 2017.12.30 2018.01.10 现有网关主体功能实现(路由, 认证授权, 代理)
+* 2018.01.11 ~ 2018.01.18 分离认证授权服务器
+* 2018.01.19 ~ 2018.01.26 集成测试/优化
 
 ### 第二阶段
 
 * 2018.01.23 ~ 日志模块实现
 
-## 构建
+## 构建应用
 
 ----
 
+>- 构建
+
 ```bash
 docker run --rm -it -v "$PWD":/go/src/xway -e CGO_ENABLED=0 -e GOOS=linux -w /go/src/xway golang:latest go build -a -installsuffix cgo -o app .
+```
+
+>- 启动
+
+```bash
+app -etcd xxx:2379 -dbHost xxx:3306 -dbUserName xxx -dbPassword xxx -redisHost xxx:6379 -redisPassword xxx
 ```
 
 ## etcdctl

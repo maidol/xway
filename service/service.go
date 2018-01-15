@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 
@@ -78,11 +79,11 @@ func NewService(options Options, registry *plugin.Registry) *Service {
 }
 
 func (s *Service) initDB() error {
-	p := redis.Pool(redis.Options{Address: "192.168.2.163:6379", Password: "ciwongrds", MaxIdle: 500, IdleTimeout: 4 * time.Minute})
+	p := redis.Pool(redis.Options{Address: s.options.RedisHost, Password: s.options.RedisPassword, MaxIdle: 500, IdleTimeout: 4 * time.Minute})
 	s.registry.SetRedisPool(p)
 	// fmt.Println("[registry redis success]")
 
-	db, err := mysql.NewPool(mysql.Options{UserName: "ciwong_sabin", Password: "ciwong2017", Address: "192.168.2.117:3306", DBName: "cw_api_gateway", MaxIdle: 500, MaxLifetime: 60 * time.Second}) // 注意: mysql客户端MaxLifetime的大小不能大于mysql服务端设置的连接会话超时时间
+	db, err := mysql.NewPool(mysql.Options{UserName: s.options.DBUserName, Password: s.options.DBPassword, Address: s.options.DBHost, DBName: s.options.GatewayDBName, MaxIdle: 500, MaxLifetime: 60 * time.Second}) // 注意: mysql客户端MaxLifetime的大小不能大于mysql服务端设置的连接会话超时时间
 	if err != nil {
 		return err
 	}
@@ -230,6 +231,16 @@ func (s *Service) load() error {
 	return nil
 }
 
+func (s *Service) startAPIServer() {
+	go func() {
+		router := mux.NewRouter()
+		api.InitProxyController(s.ng, nil, router)
+		address := s.options.ApiInterface + ":" + strconv.Itoa(s.options.ApiPort)
+		fmt.Printf("[apiserver] listening on %v\n", address)
+		log.Fatal(http.ListenAndServe(address, router))
+	}()
+}
+
 // Run ...
 func Run(registry *plugin.Registry) error {
 	defer func() {
@@ -251,15 +262,12 @@ func Run(registry *plugin.Registry) error {
 	if err := s.load(); err != nil {
 		return fmt.Errorf("service start failure: %s", err)
 	}
-	// api server
-	go func() {
-		router := mux.NewRouter()
-		api.InitProxyController(s.ng, nil, router)
-		fmt.Printf("[apiserver] listening on %s\n", "8799")
-		log.Fatal(http.ListenAndServe("127.0.0.1:8799", router))
-	}()
+
+	// start api server
+	s.startAPIServer()
+
 	// start server
 	fmt.Println("[start server]")
-	s.ngiSvc.Run(":" + fmt.Sprint(s.options.Port))
+	s.ngiSvc.Run(s.options.Interface + ":" + strconv.Itoa(s.options.Port))
 	return nil
 }

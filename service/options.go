@@ -23,6 +23,15 @@ type Options struct {
 	EtcdApiVersion int
 	EtcdNodes      listOptions
 	EtcdKey        string
+
+	DBHost     string
+	DBUserName string
+	DBPassword string
+
+	GatewayDBName string
+
+	RedisHost     string
+	RedisPassword string
 }
 
 type SeverityFlag struct {
@@ -80,11 +89,23 @@ func ParseCommandLine() (options Options, err error) {
 	flag.IntVar(&options.ApiPort, "apiPort", 9788, "Port to provide api on")
 
 	flag.StringVar(&options.Interface, "interface", "", "Interface to bind to")
-	flag.StringVar(&options.ApiInterface, "apiInterface", "", "Interface to for API to bind to")
+	flag.StringVar(&options.ApiInterface, "apiInterface", "127.0.0.1", "Interface to for API to bind to")
 
 	flag.StringVar(&options.Log, "log", "console", "Logging to use (console, json, syslog or logstash)")
 	options.LogSeverity.S = log.WarnLevel
 	flag.Var(&options.LogSeverity, "logSeverity", "log at or above this level to the loggint output")
+
+	// db
+	flag.StringVar(&options.DBHost, "dbHost", "127.0.0.1:3306", "db server")
+	flag.StringVar(&options.DBUserName, "dbUserName", "", "db username")
+	flag.StringVar(&options.DBPassword, "dbPassword", "", "db password")
+
+	// gateway db
+	flag.StringVar(&options.GatewayDBName, "gatewayDBName", "cw_api_gateway", "gateway dbname")
+
+	//redis
+	flag.StringVar(&options.RedisHost, "redisHost", "127.0.0.1:6379", "redis server")
+	flag.StringVar(&options.RedisPassword, "redisPassword", "", "redis password")
 
 	flag.Parse()
 
