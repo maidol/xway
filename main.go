@@ -23,6 +23,7 @@ func main() {
 		}
 	}
 	fmt.Printf("[GOMAXPROCS] %v\n", num)
+	runtime.GOMAXPROCS(num)
 	err := service.Run(registry.GetRegistry())
 	if err != nil {
 		log.Fatal(err)
