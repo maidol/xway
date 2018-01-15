@@ -23,7 +23,9 @@ func main() {
 		}
 	}
 	fmt.Printf("[GOMAXPROCS] %v\n", num)
-	runtime.GOMAXPROCS(num)
+	curr := runtime.GOMAXPROCS(num)
+	fmt.Printf("[CURRENT GOMAXPROCS] %v\n", curr)
+	// 获取当前gomaxprocs -> runtime.GOMAXPROCS(0)
 	err := service.Run(registry.GetRegistry())
 	if err != nil {
 		log.Fatal(err)
