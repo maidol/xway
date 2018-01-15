@@ -13,6 +13,12 @@
   version = "v3.2.13"
 
 [[projects]]
+  name = "github.com/davecgh/go-spew"
+  packages = ["spew"]
+  revision = "346938d642f2ec3594ed81d874461961cd0faa76"
+  version = "v1.1.0"
+
+[[projects]]
   name = "github.com/garyburd/redigo"
   packages = ["internal","redis"]
   revision = "d1ed5c67e5794de818ea85e6b522fda02623a484"
@@ -61,10 +67,22 @@
   revision = "f4f58459f5f7f67cb8fb4a72a905a4ca63fead83"
 
 [[projects]]
+  name = "github.com/pmezard/go-difflib"
+  packages = ["difflib"]
+  revision = "792786c7400a136282c1664665ae0a8db921c6c2"
+  version = "v1.0.0"
+
+[[projects]]
   name = "github.com/sirupsen/logrus"
   packages = ["."]
   revision = "d682213848ed68c0a260ca37d6dd5ace8423f5ba"
   version = "v1.0.4"
+
+[[projects]]
+  name = "github.com/stretchr/testify"
+  packages = ["assert"]
+  revision = "b91bfb9ebec76498946beb6af7c0230c7cc7ba6c"
+  version = "v1.2.0"
 
 [[projects]]
   name = "github.com/urfave/negroni"
@@ -123,6 +141,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "a632f9c6582fdba0a768d1e714c650b3deac5ea568c12d0442d7b8d90591f36b"
+  inputs-digest = "cd9e440e77ea241070fd12c9303790e7e7be6faba704dec9327ddad7b915dea2"
   solver-name = "gps-cdcl"
   solver-version = 1
