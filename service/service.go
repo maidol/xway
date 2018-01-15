@@ -79,7 +79,7 @@ func NewService(options Options, registry *plugin.Registry) *Service {
 }
 
 func (s *Service) initDB() error {
-	p := redis.Pool(redis.Options{Address: s.options.RedisHost, Password: s.options.RedisPassword, MaxIdle: 500, IdleTimeout: 4 * time.Minute})
+	p := redis.Pool(redis.Options{Address: s.options.RedisHost, Password: s.options.RedisPassword, MaxIdle: 500, IdleTimeout: 240 * time.Second})
 	s.registry.SetRedisPool(p)
 	// fmt.Println("[registry redis success]")
 
@@ -232,14 +232,21 @@ func (s *Service) load() error {
 }
 
 func (s *Service) startAPIServer() {
-	// TODO: 优化, 处理goroutine的安全退出
+	// TODO: 优化, 处理goroutine的安全退出, 且要在*Service的数据初始化完毕后才启动
 	go func() {
 		router := mux.NewRouter()
 		api.InitProxyController(s.ng, nil, router)
 		address := s.options.ApiInterface + ":" + strconv.Itoa(s.options.ApiPort)
-		fmt.Printf("[apiserver] listening on %v\n", address)
+		fmt.Printf("[api server] listening on %v\n", address)
 		log.Fatal(http.ListenAndServe(address, router))
 	}()
+}
+
+func (s *Service) startGWServer() {
+	address := s.options.Interface + ":" + strconv.Itoa(s.options.Port)
+	l := log.New(os.Stdout, "[gateway server] ", 0)
+	l.Printf("listening on %s", address)
+	l.Fatal(http.ListenAndServe(address, s.ngiSvc))
 }
 
 // Run ...
@@ -264,11 +271,12 @@ func Run(registry *plugin.Registry) error {
 		return fmt.Errorf("service start failure: %s", err)
 	}
 
-	// start api server
-	s.startAPIServer()
-
 	// start server
 	fmt.Println("[start server]")
-	s.ngiSvc.Run(s.options.Interface + ":" + strconv.Itoa(s.options.Port))
+	// api server
+	s.startAPIServer()
+	// gateway server
+	s.startGWServer()
+
 	return nil
 }
