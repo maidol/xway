@@ -23,20 +23,15 @@ type FrontendSpec struct {
 }
 
 type Frontend struct {
-	// Id        string
-	// Route     string
-	// Type      string
-	// BackendId string
-
-	// Settings interface{} `json:"config,omitempty"`
-
 	RouteId      string      `json:"routeId,omitempty"`
 	DomainHost   string      `json:"domainHost,omitempty"`
 	RouteUrl     string      `json:"routeUrl"`
-	RedirectHost string      `json:"redirectHost,omitempty"`
+	RedirectHost string      `json:"redirectHost,omitempty"` //需考虑分离到单独的host类型里
 	ForwardURL   string      `json:"forwardUrl,omitempty"`
-	Type         string      `json:"type,omitempty"`
+	BackendType  string      `json:"backendType,omitempty"` // 后端微服务http/rpc/..., 需考虑分离到单独的backend类型里
+	Type         string      `json:"type,omitempty"`        // 前端请求类型http/websocket/...
 	Config       interface{} `json:"config,omitempty"`
+	Status       int         `json:"status"`
 }
 
 type HTTPFrontendSettings struct {
@@ -44,7 +39,7 @@ type HTTPFrontendSettings struct {
 	Auth     []string `json:"auth,omitempty"`
 }
 
-func NewHTTPFrontend(router router.Router, routeId, domainHost, redirectHost, forwardURL string, routeExpr string, settings HTTPFrontendSettings) (*Frontend, error) {
+func NewHTTPFrontend(router router.Router, routeId, domainHost, redirectHost, forwardURL string, routeExpr string, status int, settings HTTPFrontendSettings) (*Frontend, error) {
 	return &Frontend{
 		RouteId:      routeId,
 		DomainHost:   domainHost,
@@ -53,5 +48,6 @@ func NewHTTPFrontend(router router.Router, routeId, domainHost, redirectHost, fo
 		Type:         HTTP,
 		RouteUrl:     routeExpr,
 		Config:       settings,
+		Status:       status,
 	}, nil
 }

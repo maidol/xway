@@ -232,6 +232,7 @@ func (s *Service) load() error {
 }
 
 func (s *Service) startAPIServer() {
+	// TODO: 优化, 处理goroutine的安全退出
 	go func() {
 		router := mux.NewRouter()
 		api.InitProxyController(s.ng, nil, router)

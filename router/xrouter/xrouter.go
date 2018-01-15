@@ -58,6 +58,11 @@ func (rt *Router) Remove(f interface{}) error {
 
 	fmt.Printf("[重新加载路由表]\n")
 	for _, v := range frontendsTemp {
+		if v.RouteId == "" || v.Status != 0 {
+			delete(rt.frontendMap, v.RouteId)
+			delete(rt.frontendMWMap, v.RouteId)
+			continue
+		}
 		fmt.Printf("[加载路由] %v\n", v)
 		// 变量v在第一次定义时, 地址是确定的(默认不变) fmt.Printf("%p %v\n", &v, &v)
 		// 防止每次传递变量地址(&v)一样导致的bug, 需赋值f:=v
@@ -88,6 +93,11 @@ func (rt *Router) Handle(f interface{}) error {
 
 	fmt.Printf("[重新加载路由表]\n")
 	for _, v := range frontendsTemp {
+		if v.RouteId == "" || v.Status != 0 {
+			delete(rt.frontendMap, v.RouteId)
+			delete(rt.frontendMWMap, v.RouteId)
+			continue
+		}
 		fmt.Printf("[加载路由] %v\n", v)
 		// 变量v在第一次定义时, 地址是确定的(默认不变) fmt.Printf("%p %v\n", &v, &v)
 		// 防止每次传递变量地址(&v)一样导致的bug, 需赋值f:=v
@@ -178,6 +188,9 @@ func New(snp *en.Snapshot, registry *plugin.Registry, newRouterC chan bool) negr
 
 	fmt.Printf("[开始加载路由表]\n")
 	for _, v := range frontendsTemp {
+		if v.RouteId == "" || v.Status != 0 {
+			continue
+		}
 		fmt.Printf("[加载路由] %v\n", v)
 		// 变量v在第一次定义时, 地址是确定的(默认不变) fmt.Printf("%p %v\n", &v, &v)
 		// 防止每次传递变量地址(&v)一样导致的bug, 需赋值f:=v

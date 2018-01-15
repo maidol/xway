@@ -8,18 +8,21 @@ import (
 )
 
 const (
-	HTTP = "http"
-	RPC  = "rpc"
+	HTTP      = "http"
+	WEBSOCKET = "websocket"
+	RPC       = "rpc"
 )
 
 type rawFrontend struct {
 	RouteId      string          `json:"routeId,omitempty"`
 	DomainHost   string          `json:"domainHost,omitempty"`
 	RouteUrl     string          `json:"routeUrl"`
-	RedirectHost string          `json:"redirectHost,omitempty"`
+	RedirectHost string          `json:"redirectHost,omitempty"` //需考虑分离到单独的host类型里
 	ForwardURL   string          `json:"forwardUrl,omitempty"`
-	Type         string          `json:"type,omitempty"`
+	BackendType  string          `json:"backendType,omitempty"` // 后端微服务http/rpc/..., 需考虑分离到单独的backend类型里
+	Type         string          `json:"type,omitempty"`        // 前端请求类型http/websocket
 	Config       json.RawMessage `json:"config,omitempty"`
+	Status       int             `json:"status,string"`
 }
 
 type rawFrontends struct {
@@ -34,6 +37,8 @@ func FrontendFromJSON(router router.Router, in []byte) (*Frontend, error) {
 		return &Frontend{}, nil
 	}
 
+	// TODO: 处理多种rf.Type(http, websocket)
+	// 目前只支持http类型的前端请求
 	if rf.Type != HTTP {
 		return nil, fmt.Errorf("Unsupported frontend type: %v", rf.Type)
 	}
@@ -45,7 +50,7 @@ func FrontendFromJSON(router router.Router, in []byte) (*Frontend, error) {
 		}
 	}
 
-	f, err := NewHTTPFrontend(router, rf.RouteId, rf.DomainHost, rf.RedirectHost, rf.ForwardURL, rf.RouteUrl, s)
+	f, err := NewHTTPFrontend(router, rf.RouteId, rf.DomainHost, rf.RedirectHost, rf.ForwardURL, rf.RouteUrl, rf.Status, s)
 	if err != nil {
 		return nil, err
 	}
