@@ -29,7 +29,7 @@ docker run --rm -it -v "$PWD":/go/src/xway -e CGO_ENABLED=0 -e GOOS=linux -w /go
 >- 启动
 
 ```bash
-app -etcd xxx:2379 -dbHost xxx:3306 -dbUserName xxx -dbPassword xxx -redisHost xxx:6379 -redisPassword xxx
+GOMAXPROCS=2 app -etcd xxx:2379 -dbHost xxx:3306 -dbUserName xxx -dbPassword xxx -redisHost xxx:6379 -redisPassword xxx
 ```
 
 ## etcdctl
