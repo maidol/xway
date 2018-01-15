@@ -14,7 +14,10 @@ type Router interface {
 	Handle(interface{}) error
 
 	// Validates whether this is an acceptable route expression
-	IsValid(*http.Request) (bool, interface{})
+	IsValid(string) bool
+
+	// IsMatch whether this is a matched route
+	IsMatch(*http.Request) (bool, interface{})
 
 	// ServiceHTTP is the negroni.Handler implementation
 	ServeHTTP(http.ResponseWriter, *http.Request, http.HandlerFunc)

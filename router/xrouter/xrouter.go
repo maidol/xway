@@ -28,7 +28,7 @@ type Router struct {
 func (rt *Router) ServeHTTP(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 	// 处理路由匹配
 	fmt.Printf("[MW:xrouter] -> url router for: r.Host %v, r.URL %v\n", r.Host, r.URL)
-	match, fe := rt.IsValid(r)
+	match, fe := rt.IsMatch(r)
 	if !match {
 		DefaultNotFound(rw, r)
 		return
@@ -116,8 +116,12 @@ func (fs frontendSlice) Less(i, j int) bool {
 	return len(strings.Split(strings.Trim(fs[j].RouteUrl, "/"), "/")) < len(strings.Split(strings.Trim(fs[i].RouteUrl, "/"), "/"))
 }
 
-// IsValid 验证路由匹配
-func (rt *Router) IsValid(r *http.Request) (bool, interface{}) {
+func (rt *Router) IsValid(expr string) bool {
+	return true
+}
+
+// IsMatch 验证路由匹配
+func (rt *Router) IsMatch(r *http.Request) (bool, interface{}) {
 	if !strings.HasPrefix(r.URL.Path, "/gateway/") {
 		return false, nil
 	}
