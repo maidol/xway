@@ -133,7 +133,7 @@ func (s *Service) initProxy() error {
 	// 获取快照/监听router等信息的变化
 	snp, err := s.ng.GetSnapshot()
 	if err != nil {
-		return err
+		return fmt.Errorf("s.ng.GetSnapshot failure: %v", err)
 	}
 	// fmt.Printf("GetSnapshot -> %#v\n", snp)
 	// 需要处理发生错误时, goroutine退出
@@ -155,7 +155,7 @@ func (s *Service) initProxy() error {
 		}
 		// fmt.Println("start watching")
 		if err := s.ng.Subscribe(changes, snp.Index+1, s.watcherCancelC); err != nil {
-			fmt.Printf("[engine.Subscribe] watcher failed: '%v'\n", err)
+			fmt.Printf("[s.ng.Subscribe] watcher failure: '%v'\n", err)
 			s.watcherErrorC <- struct{}{}
 			return
 		}
@@ -214,17 +214,17 @@ func (s *Service) initProxy() error {
 
 func (s *Service) load() error {
 	if err := s.initDB(); err != nil {
-		return err
+		return fmt.Errorf("initDB failure: %v", err)
 	}
 	fmt.Println("[initDB success]")
 
 	if err := s.initEngine(); err != nil {
-		return err
+		return fmt.Errorf("initEngine failure: %v", err)
 	}
 	fmt.Println("[initEngine success]")
 
 	if err := s.initProxy(); err != nil {
-		return err
+		return fmt.Errorf("initProxy failure: %v", err)
 	}
 	fmt.Println("[initProxy success]")
 
@@ -268,7 +268,7 @@ func Run(registry *plugin.Registry) error {
 	// appLogger.Info("Starting......")
 	s := NewService(options, registry)
 	if err := s.load(); err != nil {
-		return fmt.Errorf("service start failure: %s", err)
+		return fmt.Errorf("service.load failure: %s", err)
 	}
 
 	// start server

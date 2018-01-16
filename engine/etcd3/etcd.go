@@ -85,7 +85,7 @@ func (n *ng) parseFrontends(kvs []*mvccpb.KeyValue) ([]engine.FrontendSpec, erro
 		// frontend, err := engine.FrontendFromJSON(n.registry.GetRouter(), []byte(kv.Value))
 		frontend, err := engine.FrontendFromJSON(n.registry.GetRouter(), []byte(kv.Value))
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("engine.FrontendFromJSON failure: %v", err)
 		}
 		// fmt.Println("-> frontend:", frontend)
 		frontendSpec := engine.FrontendSpec{
@@ -215,8 +215,13 @@ func (n *ng) ReloadFrontendsFromDB(fes []map[string]string) error {
 			return err
 		}
 		fval := strings.Replace(string(v), `\"`, `"`, -1) // 处理字符`\"`
-		fval = strings.Replace(fval, `"config":"`, `"config":`, 1)
-		fval = strings.Replace(fval, `]}","`, `]},"`, 1)
+		fval = strings.Replace(fval, `"{`, `{`, 1)
+		fval = strings.Replace(fval, `}"`, `}`, 1)
+		// 验证json数据格式, 过滤无效数据
+		_, err = engine.FrontendFromJSON(n.GetRegistry().GetRouter(), []byte(fval))
+		if err != nil {
+			return fmt.Errorf("engine.FrontendFromJSON failure: %v", err)
+		}
 		fmt.Println(fkey, ":", fval)
 		fmt.Println("------------------------")
 		_, err = n.client.Put(n.context, fkey, fval)

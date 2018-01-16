@@ -33,8 +33,8 @@ func FrontendFromJSON(router router.Router, in []byte) (*Frontend, error) {
 	var rf *rawFrontend
 	if err := json.Unmarshal(in, &rf); err != nil {
 		// TODO: 转换失败处理
-		fmt.Println("[路由转换失败, 请检查数据格式] json.Unmarshal err", err, string(in))
-		return &Frontend{}, nil
+		// fmt.Printf("[FrontendFromJSON failure] Invalid Frontend json format, json.Unmarshal err: %v, %s", err, in)
+		return nil, fmt.Errorf("Invalid Frontend json format, json.Unmarshal err: %v, data: %s", err, in)
 	}
 
 	// TODO: 处理多种rf.Type(http, websocket)
@@ -46,7 +46,7 @@ func FrontendFromJSON(router router.Router, in []byte) (*Frontend, error) {
 	var s HTTPFrontendSettings
 	if rf.Config != nil {
 		if err := json.Unmarshal(rf.Config, &s); err != nil {
-			return nil, fmt.Errorf("Invalid HTTPFrontendSettings json format: %v", err.Error())
+			return nil, fmt.Errorf("Invalid HTTPFrontendSettings json format, json.Unmarshal err: %v, config data: %s; it's frontend: %s", err, rf.Config, in)
 		}
 	}
 

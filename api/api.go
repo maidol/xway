@@ -84,7 +84,10 @@ func (pc *ProxyController) restoreRouter(w http.ResponseWriter, r *http.Request,
 		return nil, err
 	}
 	// 加载到engine
-	pc.ng.ReloadFrontendsFromDB(arr)
+	err = pc.ng.ReloadFrontendsFromDB(arr)
+	if err != nil {
+		return nil, fmt.Errorf("pc.ng.ReloadFrontendsFromDB failure: %v", err)
+	}
 	return arr, nil
 }
 

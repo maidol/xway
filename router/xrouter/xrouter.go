@@ -70,6 +70,7 @@ func (rt *Router) Remove(f interface{}) error {
 		f := v
 		frontends = append(frontends, &f)
 	}
+	fmt.Printf("[重载路由表完成]\n")
 
 	rt.frontends = frontends
 	return nil
@@ -105,6 +106,7 @@ func (rt *Router) Handle(f interface{}) error {
 		f := v
 		frontends = append(frontends, &f)
 	}
+	fmt.Printf("[重载路由表完成]\n")
 
 	rt.frontends = frontends
 	return nil
@@ -202,6 +204,7 @@ func New(snp *en.Snapshot, registry *plugin.Registry, newRouterC chan bool) negr
 		frontends = append(frontends, &f)
 		frontendMap[f.RouteId] = &f
 	}
+	fmt.Printf("[加载路由表完成]\n")
 	// 加载成功
 	newRouterC <- true
 	return &Router{
