@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/coreos/etcd/mvcc/mvccpb"
 
@@ -97,9 +98,13 @@ func (n *ng) parseFrontends(kvs []*mvccpb.KeyValue) ([]engine.FrontendSpec, erro
 }
 
 func (n *ng) GetSnapshot() (*engine.Snapshot, error) {
-	response, err := n.client.Get(n.context, n.etcdKey, etcd.WithPrefix(), etcd.WithSort(etcd.SortByKey, etcd.SortAscend))
+	tt := 30 * time.Second
+	c, ccf := context.WithTimeout(n.context, tt)
+	defer ccf()
+	response, err := n.client.Get(c, n.etcdKey, etcd.WithPrefix(), etcd.WithSort(etcd.SortByKey, etcd.SortAscend))
+	ccf()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("c cancel, n.client.Get timeout %v failure: %v, to check the etcd nodes connection wether was valid", tt, err)
 	}
 
 	frontends, err := n.parseFrontends(filterByPrefix(response.Kvs, n.etcdKey+"/frontends"))
