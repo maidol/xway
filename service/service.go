@@ -79,7 +79,7 @@ func NewService(options Options, registry *plugin.Registry) *Service {
 }
 
 func (s *Service) initDB() error {
-	p := redis.Pool(redis.Options{Address: s.options.RedisHost, Password: s.options.RedisPassword, MaxIdle: 500, IdleTimeout: 240 * time.Second})
+	p := redis.Pool(redis.Options{Address: s.options.RedisHost, Password: s.options.RedisPassword, DB: s.options.RedisDB, MaxIdle: 500, IdleTimeout: 240 * time.Second})
 	s.registry.SetRedisPool(p)
 	// fmt.Println("[registry redis success]")
 

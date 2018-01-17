@@ -32,6 +32,7 @@ type Options struct {
 
 	RedisHost     string
 	RedisPassword string
+	RedisDB       int
 }
 
 type SeverityFlag struct {
@@ -106,6 +107,7 @@ func ParseCommandLine() (options Options, err error) {
 	//redis
 	flag.StringVar(&options.RedisHost, "redisHost", "127.0.0.1:6379", "redis server")
 	flag.StringVar(&options.RedisPassword, "redisPassword", "", "redis password")
+	flag.IntVar(&options.RedisDB, "redisDB", 0, "redis db num")
 
 	flag.Parse()
 
