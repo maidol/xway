@@ -7,6 +7,8 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -55,8 +57,8 @@ func NewDo() (http.HandlerFunc, error) {
 
 		if err != nil {
 			fmt.Printf("[MW:proxy] url.Parse err: %v\n", err)
-			er := xerror.NewRequestError(xemun.RetProxyError, xemun.ECodeProxyFailed, err.Error())
-			er.Write(w)
+			e := xerror.NewRequestError(xemun.RetProxyError, xemun.ECodeProxyFailed, err.Error())
+			e.Write(w)
 			return
 		}
 
@@ -76,8 +78,8 @@ func NewDo() (http.HandlerFunc, error) {
 		resp, err := client.Do(outReq)
 		if err != nil {
 			fmt.Printf("[MW:proxy] client.Do err: %v\n", err)
-			er := xerror.NewRequestError(xemun.RetProxyError, xemun.ECodeProxyFailed, err.Error())
-			er.Write(w)
+			e := xerror.NewRequestError(xemun.RetProxyError, xemun.ECodeProxyFailed, err.Error())
+			e.Write(w)
 			return
 		}
 		defer resp.Body.Close()
@@ -85,10 +87,29 @@ func NewDo() (http.HandlerFunc, error) {
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			fmt.Printf("[MW:proxy] ioutil.ReadAll err: %v\n", err)
-			er := xerror.NewRequestError(xemun.RetProxyError, xemun.ECodeInternal, err.Error())
-			er.Write(w)
+			e := xerror.NewRequestError(xemun.RetProxyError, xemun.ECodeInternal, err.Error())
+			e.Write(w)
+			logProxyError(outReq, e)
 			return
 		}
+
+		// TODO: 处理resp.StatusCode
+		statusCode := resp.StatusCode
+		b, rexerr := regexp.MatchString("^[2|3]", strconv.Itoa(statusCode))
+		if rexerr != nil {
+			fmt.Printf("[MW:proxy] regexp.MatchString err: %v\n", rexerr)
+			e := xerror.NewRequestError(xemun.RetProxyError, xemun.ECodeProxyFailed, err.Error())
+			e.Write(w)
+			return
+		}
+		if !b {
+			// 处理4xx, 5xx ...
+			e := xerror.NewRequestError(xemun.RetProxyError, xemun.ECodeProxyFailed, fmt.Sprintf("源服务器错误,[状态码]:%v, body:%s", statusCode, body))
+			e.Write(w)
+			logProxyError(outReq, e)
+			return
+		}
+		w.WriteHeader(statusCode)
 
 		for k, v := range resp.Header {
 			for _, s := range v {
@@ -102,6 +123,17 @@ func NewDo() (http.HandlerFunc, error) {
 		w.Write(body)
 	})
 	return pr, nil
+}
+
+func logProxyError(r *http.Request, err error) {
+	fmt.Printf("======http proxy occur err: begin======\n")
+	fmt.Printf("request option: %+v\n", r)
+	body, err := ioutil.ReadAll(r.Body)
+	if err == nil {
+		fmt.Printf("request body: %s\n", body)
+	}
+	fmt.Printf("err message: %v\n", err)
+	fmt.Printf("======http proxy occur err: end======\n")
 }
 
 // New ...
