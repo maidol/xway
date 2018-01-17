@@ -44,7 +44,8 @@ func NewDo() (http.HandlerFunc, error) {
 		forwardURL = strings.Replace(forwardURL, strings.ToLower(strings.TrimRight(matchRouteFrontend.RouteUrl, "/")), strings.ToLower(strings.TrimRight(matchRouteFrontend.ForwardURL, "/")), 1)
 		u, err := url.Parse("http://" + matchRouteFrontend.RedirectHost + forwardURL + "?" + r.URL.RawQuery)
 
-		fmt.Printf("[MW:proxy] -> url forward to: %v, %v\n", u.Host, u)
+		// fmt.Printf("[MW:proxy] -> url forward to: %v, %v\n", u.Host, u)
+
 		// TODO: 优化, 异步日志
 		// pool := xgrpool.Default()
 		// pool.JobQueue <- func() {

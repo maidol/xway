@@ -33,10 +33,10 @@ const (
 )
 
 type Service struct {
-	// client         etcd.Client
-	options        Options
-	registry       *plugin.Registry
-	ng             en.Engine
+	options  Options
+	registry *plugin.Registry
+	ng       en.Engine
+	// ngiSvc the gateway
 	ngiSvc         *negroni.Negroni
 	router         router.Router
 	watcherCancelC chan struct{}
@@ -172,8 +172,10 @@ func (s *Service) initProxy() error {
 	}()
 
 	// 加载路由匹配中间件/加载代理服务
-	// negroni
+	// negroni for gateway
 	n := negroni.New()
+	// recovery
+	n.Use(negroni.NewRecovery())
 	// context
 	n.UseFunc(xwaymw.XWayContext(xwaymw.ContextMWOption{Registry: s.registry}))
 	// router

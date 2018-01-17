@@ -27,7 +27,7 @@ type Router struct {
 
 func (rt *Router) ServeHTTP(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 	// 处理路由匹配
-	fmt.Printf("[MW:xrouter] -> url router for: r.Host %v, r.URL %v\n", r.Host, r.URL)
+	// fmt.Printf("[MW:xrouter] -> url router for: r.Host %v, r.URL %v\n", r.Host, r.URL)
 	match, fe := rt.IsMatch(r)
 	if !match {
 		DefaultNotFound(rw, r)
