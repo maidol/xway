@@ -109,20 +109,25 @@ func NewDo() (http.HandlerFunc, error) {
 			logProxyError(outReq, e)
 			return
 		}
-		w.WriteHeader(statusCode)
 
-		for k, v := range resp.Header {
-			for _, s := range v {
-				w.Header().Add(k, s)
-			}
-		}
-
-		// body = append(body, ([]byte("abc"))...)
-		// w.Header().Set("Content-Length", string(len(body)))
-		// fmt.Printf("-> response data: %v\n", string(body))
-		w.Write(body)
+		sendResponse(w, resp.Header, statusCode, body)
 	})
 	return pr, nil
+}
+
+func sendResponse(w http.ResponseWriter, header http.Header, statusCode int, body []byte) {
+	for k, v := range header {
+		for _, s := range v {
+			w.Header().Add(k, s)
+		}
+	}
+	// body = append(body, ([]byte("abc"))...)
+	// w.Header().Set("Content-Length", string(len(body)))
+	// fmt.Printf("-> response data: %v\n", string(body))
+
+	// 顺序执行, w.WriteHeader的操作必须放在w.Header().Add的设置后面, 避免影响header
+	w.WriteHeader(statusCode)
+	w.Write(body)
 }
 
 func logProxyError(r *http.Request, err error) {
