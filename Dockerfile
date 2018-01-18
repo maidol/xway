@@ -1,7 +1,8 @@
-# FROM scratch
-# ADD app /
-# EXPOSE 9799
-# CMD ["/app"]
+FROM scratch
+ADD app /
+EXPOSE 9799
+EXPOSE 9788
+CMD ["/app"]
 
 # golang:onbuild automatically copies the package source, 
 # fetches the application dependencies, builds the program, 
@@ -11,13 +12,13 @@
 # EXPOSE 9799
 
 # For more control, you can copy and build manually
-FROM golang:latest 
-LABEL Name=xway Version=0.0.1 
-RUN mkdir -p /go/src/xway
-ADD . /go/src/xway
-WORKDIR /go/src/xway
-ENV CGO_ENABLED 0
-RUN go build -a -installsuffix cgo -o app .
-EXPOSE 9799
-EXPOSE 9788
-CMD ["/go/src/xway/app"]
+# FROM golang:latest 
+# LABEL Name=xway Version=0.0.1 
+# RUN mkdir -p /go/src/xway
+# ADD . /go/src/xway
+# WORKDIR /go/src/xway
+# ENV CGO_ENABLED 0
+# RUN go build -a -installsuffix cgo -o app .
+# EXPOSE 9799
+# EXPOSE 9788
+# CMD ["/go/src/xway/app"]
