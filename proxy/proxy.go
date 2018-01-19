@@ -134,11 +134,13 @@ func sendResponse(w http.ResponseWriter, header http.Header, statusCode int, bod
 func logProxyError(r *http.Request, err error) {
 	fmt.Printf("======http proxy occur err: begin======\n")
 	fmt.Printf("request option: %+v\n", r)
-	body, err := ioutil.ReadAll(r.Body)
-	if err == nil {
-		fmt.Printf("request body: %s\n", body)
-	}
 	fmt.Printf("err message: %v\n", err)
+	body, e := ioutil.ReadAll(r.Body)
+	if e == nil {
+		fmt.Printf("request body: %s\n", body)
+	} else {
+		fmt.Printf("request body ioutil.ReadAll err: %v\n", e)
+	}
 	fmt.Printf("======http proxy occur err: end======\n")
 }
 
