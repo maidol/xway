@@ -78,8 +78,9 @@ func NewDo() (http.HandlerFunc, error) {
 		resp, err := client.Do(outReq)
 		if err != nil {
 			fmt.Printf("[MW:proxy] client.Do err: %v\n", err)
-			e := xerror.NewRequestError(xemun.RetProxyError, xemun.ECodeProxyFailed, err.Error())
+			e := xerror.NewRequestError(xemun.RetProxyError, xemun.ECodeProxyFailed, "client.Do err: "+err.Error())
 			e.Write(w)
+			logProxyError(outReq, e)
 			return
 		}
 		defer resp.Body.Close()
@@ -87,7 +88,7 @@ func NewDo() (http.HandlerFunc, error) {
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			fmt.Printf("[MW:proxy] ioutil.ReadAll err: %v\n", err)
-			e := xerror.NewRequestError(xemun.RetProxyError, xemun.ECodeInternal, err.Error())
+			e := xerror.NewRequestError(xemun.RetProxyError, xemun.ECodeInternal, "ioutil.ReadAll err: "+err.Error())
 			e.Write(w)
 			logProxyError(outReq, e)
 			return
@@ -98,7 +99,7 @@ func NewDo() (http.HandlerFunc, error) {
 		b, rexerr := regexp.MatchString("^[2|3]", strconv.Itoa(statusCode))
 		if rexerr != nil {
 			fmt.Printf("[MW:proxy] regexp.MatchString err: %v\n", rexerr)
-			e := xerror.NewRequestError(xemun.RetProxyError, xemun.ECodeProxyFailed, err.Error())
+			e := xerror.NewRequestError(xemun.RetProxyError, xemun.ECodeProxyFailed, "regexp.MatchString err: "+err.Error())
 			e.Write(w)
 			return
 		}
