@@ -26,7 +26,7 @@ type Router struct {
 }
 
 func (rt *Router) ServeHTTP(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
-	// TODO: x-way等头信息元数据可考虑在一个中间件添加
+	// TODO: x-way等个性化的头信息元数据可考虑移到在一个中间件配置
 	rw.Header().Add("x-way", "beta-1.0.0")
 	// 处理路由匹配
 	// fmt.Printf("[MW:xrouter] -> url router for: r.Host %v, r.URL %v\n", r.Host, r.URL)
