@@ -8,13 +8,15 @@
 
 ### 第一阶段
 
-* 2017.xx.xx ~ 2018.01.10 现有网关主体功能实现(路由, 认证授权, 代理)
-* 2018.01.11 ~ 2018.01.18 分离认证授权服务器
-* 2018.01.19 ~ 2018.01.26 集成测试/优化
+* 路由
+* 基础代理(http)
+* token授权认证
+* hmac sign 授权认证
+* 错误处理
 
 ### 第二阶段
 
-* 2018.01.23 ~ 日志模块实现
+* 日志模块
 
 ## 构建应用
 
@@ -23,7 +25,7 @@
 >- 构建
 
 ```bash
-docker run --rm -it -v "$PWD":/go/src/xway -e CGO_ENABLED=0 -e GOOS=linux -w /go/src/xway golang:latest go build -a -installsuffix cgo -o app .
+docker run --rm -v "$PWD":/go/src/xway -e CGO_ENABLED=0 -e GOOS=linux -w /go/src/xway golang:latest go build -a -installsuffix cgo -o app .
 ```
 
 >- 启动
