@@ -79,11 +79,11 @@ func NewService(options Options, registry *plugin.Registry) *Service {
 }
 
 func (s *Service) initDB() error {
-	p := redis.Pool(redis.Options{Address: s.options.RedisHost, Password: s.options.RedisPassword, DB: s.options.RedisDB, MaxIdle: s.options.RedisMaxIdle, IdleTimeout: 240 * time.Second})
+	p := redis.Pool(redis.Options{Address: s.options.RedisHost, Password: s.options.RedisPassword, DB: s.options.RedisDB, MaxIdle: s.options.RedisMaxIdle, IdleTimeout: time.Duration(s.options.RedisConnIdleTimeout * 1000000000)})
 	s.registry.SetRedisPool(p)
 	// fmt.Println("[registry redis success]")
 
-	db, err := mysql.NewPool(mysql.Options{UserName: s.options.DBUserName, Password: s.options.DBPassword, Address: s.options.DBHost, DBName: s.options.GatewayDBName, MaxIdle: s.options.DBMaxIdle, MaxLifetime: 60 * time.Second}) // 注意: mysql客户端MaxLifetime的大小不能大于mysql服务端设置的连接会话超时时间
+	db, err := mysql.NewPool(mysql.Options{UserName: s.options.DBUserName, Password: s.options.DBPassword, Address: s.options.DBHost, DBName: s.options.GatewayDBName, MaxIdle: s.options.DBMaxIdle, MaxLifetime: time.Duration(s.options.DBConnMaxLifetime * 1000000000)}) // 注意: mysql客户端MaxLifetime的大小不能大于mysql服务端设置的连接会话超时时间
 	if err != nil {
 		return err
 	}

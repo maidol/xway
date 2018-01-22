@@ -28,6 +28,8 @@ type Options struct {
 	DBUserName string
 	DBPassword string
 	DBMaxIdle  int
+	// DBConnMaxLifetime second
+	DBConnMaxLifetime int
 
 	GatewayDBName string
 
@@ -35,6 +37,8 @@ type Options struct {
 	RedisPassword string
 	RedisDB       int
 	RedisMaxIdle  int
+	// RedisConnIdleTimeout second
+	RedisConnIdleTimeout int
 }
 
 type SeverityFlag struct {
@@ -103,6 +107,7 @@ func ParseCommandLine() (options Options, err error) {
 	flag.StringVar(&options.DBUserName, "dbUserName", "", "db username")
 	flag.StringVar(&options.DBPassword, "dbPassword", "", "db password")
 	flag.IntVar(&options.DBMaxIdle, "dbMaxIdle", 1000, "db maxidle")
+	flag.IntVar(&options.DBConnMaxLifetime, "dbConnMaxLifetime", 60, "db Conn MaxLifetime(second)")
 
 	// gateway db
 	flag.StringVar(&options.GatewayDBName, "gatewayDBName", "cw_api_gateway", "gateway dbname")
@@ -112,6 +117,7 @@ func ParseCommandLine() (options Options, err error) {
 	flag.StringVar(&options.RedisPassword, "redisPassword", "", "redis password")
 	flag.IntVar(&options.RedisDB, "redisDB", 0, "redis db num")
 	flag.IntVar(&options.RedisMaxIdle, "redisMaxIdle", 1000, "redis db maxidle")
+	flag.IntVar(&options.RedisConnIdleTimeout, "redisConnIdleTimeout", 240, "redis db Conn IdleTimeout(second)")
 
 	flag.Parse()
 
