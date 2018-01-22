@@ -30,7 +30,7 @@ func NewDo() (http.HandlerFunc, error) {
 		// Proxy: http.ProxyFromEnvironment,
 		DialContext: (&net.Dialer{
 			Timeout:   60 * time.Second,
-			KeepAlive: 120 * time.Second,
+			KeepAlive: 300 * time.Second,
 		}).DialContext,
 		ResponseHeaderTimeout: 60 * time.Second,
 		TLSHandshakeTimeout:   30 * time.Second,
