@@ -29,13 +29,14 @@ func NewDo() (http.HandlerFunc, error) {
 	tr := &http.Transport{
 		// Proxy: http.ProxyFromEnvironment,
 		DialContext: (&net.Dialer{
-			Timeout:   30 * time.Second,
-			KeepAlive: 30 * time.Second,
+			Timeout:   60 * time.Second,
+			KeepAlive: 120 * time.Second,
 		}).DialContext,
 		ResponseHeaderTimeout: 30 * time.Second,
 		TLSHandshakeTimeout:   30 * time.Second,
-		// MaxIdleConns:          0, // Zero means no limit.
+		MaxIdleConns:          0, // Zero means no limit.
 		MaxIdleConnsPerHost: 1000,
+		IdleConnTimeout:0,
 	}
 
 	client := &http.Client{Transport: tr}

@@ -27,12 +27,14 @@ type Options struct {
 	DBHost     string
 	DBUserName string
 	DBPassword string
+	DBMaxIdle  int
 
 	GatewayDBName string
 
 	RedisHost     string
 	RedisPassword string
 	RedisDB       int
+	RedisMaxIdle  int
 }
 
 type SeverityFlag struct {
@@ -100,6 +102,7 @@ func ParseCommandLine() (options Options, err error) {
 	flag.StringVar(&options.DBHost, "dbHost", "127.0.0.1:3306", "db server")
 	flag.StringVar(&options.DBUserName, "dbUserName", "", "db username")
 	flag.StringVar(&options.DBPassword, "dbPassword", "", "db password")
+	flag.IntVar(&options.DBMaxIdle, "dbMaxIdle", 1000, "db maxidle")
 
 	// gateway db
 	flag.StringVar(&options.GatewayDBName, "gatewayDBName", "cw_api_gateway", "gateway dbname")
@@ -108,6 +111,7 @@ func ParseCommandLine() (options Options, err error) {
 	flag.StringVar(&options.RedisHost, "redisHost", "127.0.0.1:6379", "redis server")
 	flag.StringVar(&options.RedisPassword, "redisPassword", "", "redis password")
 	flag.IntVar(&options.RedisDB, "redisDB", 0, "redis db num")
+	flag.IntVar(&options.RedisMaxIdle, "redisMaxIdle", 1000, "redis db maxidle")
 
 	flag.Parse()
 
