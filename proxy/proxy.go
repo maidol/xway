@@ -35,7 +35,7 @@ func NewDo() (http.HandlerFunc, error) {
 		ResponseHeaderTimeout: 60 * time.Second,
 		TLSHandshakeTimeout:   30 * time.Second,
 		MaxIdleConns:          0, // Zero means no limit.
-		MaxIdleConnsPerHost:   2000,
+		MaxIdleConnsPerHost:   5000,
 		IdleConnTimeout:       0,
 	}
 
