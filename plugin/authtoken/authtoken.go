@@ -1,6 +1,7 @@
 package authtoken
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"math"
@@ -111,7 +112,10 @@ func New(opt interface{}) negroni.Handler {
 func clientAuth(clientId string, registry *plugin.Registry) (*appClient, error) {
 	db := registry.GetDBPool()
 	ac := &appClient{}
-	row := db.QueryRow("select clientId, privateKey, status from apps where clientId=?", clientId)
+	// row := db.QueryRow("select clientId, privateKey, status from apps where clientId=?", clientId)
+	ctx, cl := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cl()
+	row := db.QueryRowContext(ctx, "select clientId, privateKey, status from apps where clientId=?", clientId)
 	if err := row.Scan(&ac.clientId, &ac.privateKey, &ac.status); err != nil {
 		if err == sql.ErrNoRows {
 			e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeClientException, err.Error())
