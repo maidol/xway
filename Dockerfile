@@ -1,6 +1,6 @@
 # FROM scratch
 # ADD ca-certificates.crt /etc/ssl/certs/  # when use https, resolve Go’s x509 error
-From golang:latest 
+FROM golang:latest 
 ADD app /
 EXPOSE 9799
 EXPOSE 9788
