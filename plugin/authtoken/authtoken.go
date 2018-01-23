@@ -144,7 +144,7 @@ func getToken(token string, registry *plugin.Registry) (map[string]string, error
 	}()
 	// 读取token, 验证权限
 	tk := "cw:gateway:token:" + token
-	v, err := rdc.Do("HGETALL", tk)
+	v, err := redis.DoWithTimeout(rdc, 10*time.Second, "HGETALL", tk)
 	if err != nil {
 		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeInternal, err.Error())
 		return nil, e
