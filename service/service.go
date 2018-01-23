@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"strconv"
@@ -79,11 +80,11 @@ func NewService(options Options, registry *plugin.Registry) *Service {
 }
 
 func (s *Service) initDB() error {
-	p := redis.Pool(redis.Options{Address: s.options.RedisHost, Password: s.options.RedisPassword, DB: s.options.RedisDB, MaxIdle: s.options.RedisMaxIdle, IdleTimeout: time.Duration(s.options.RedisConnIdleTimeout * 1000000000)})
+	p := redis.Pool(redis.Options{Address: s.options.RedisHost, Password: s.options.RedisPassword, DB: s.options.RedisDB, Wait: s.options.RedisWait, MaxActive: s.options.RedisMaxActive, MaxIdle: s.options.RedisMaxIdle, IdleTimeout: s.options.RedisConnIdleTimeout})
 	s.registry.SetRedisPool(p)
 	// fmt.Println("[registry redis success]")
 
-	db, err := mysql.NewPool(mysql.Options{UserName: s.options.DBUserName, Password: s.options.DBPassword, Address: s.options.DBHost, DBName: s.options.GatewayDBName, MaxIdle: s.options.DBMaxIdle, MaxLifetime: time.Duration(s.options.DBConnMaxLifetime * 1000000000)}) // 注意: mysql客户端MaxLifetime的大小不能大于mysql服务端设置的连接会话超时时间
+	db, err := mysql.NewPool(mysql.Options{UserName: s.options.DBUserName, Password: s.options.DBPassword, Address: s.options.DBHost, DBName: s.options.GatewayDBName, MaxOpen: s.options.DBMaxOpen, MaxIdle: s.options.DBMaxIdle, MaxLifetime: s.options.DBConnMaxLifetime}) // 注意: mysql客户端MaxLifetime的大小不能大于mysql服务端设置的连接会话超时时间
 	if err != nil {
 		return err
 	}
@@ -184,7 +185,22 @@ func (s *Service) initProxy() error {
 	s.registry.SetRouter(s.router)
 	n.Use(r)
 	// proxy
-	p, err := proxy.NewDo()
+	tr := &http.Transport{
+		// Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: s.options.ProxyConnKeepAlive,
+			DualStack: true,
+		}).DialContext,
+		// ResponseHeaderTimeout: 60 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+		MaxIdleConns:          s.options.ProxyMaxIdleConns, // Zero means no limit.
+		MaxIdleConnsPerHost:   s.options.ProxyMaxIdleConnsPerHost,
+		IdleConnTimeout:       s.options.ProxyIdleConnTimeout,
+	}
+	s.registry.SetTransport(tr)
+	p, err := proxy.NewDo(tr)
 	if err != nil {
 		return err
 	}

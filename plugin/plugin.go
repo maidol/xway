@@ -3,6 +3,7 @@ package plugin
 import (
 	"database/sql"
 	"fmt"
+	"net/http"
 	"xway/router"
 
 	"github.com/garyburd/redigo/redis"
@@ -16,6 +17,7 @@ type Registry struct {
 	middlewareSpecs map[string]*MiddlewareSpec
 	redisPool       *redis.Pool
 	dbPool          *sql.DB
+	transport       *http.Transport
 }
 
 // MiddlewareSpec ...
@@ -74,6 +76,14 @@ func (r *Registry) SetDBPool(p *sql.DB) {
 
 func (r *Registry) GetDBPool() *sql.DB {
 	return r.dbPool
+}
+
+func (r *Registry) SetTransport(tr *http.Transport) {
+	r.transport = tr
+}
+
+func (r *Registry) GetTransport() *http.Transport {
+	return r.transport
 }
 
 func (r *Registry) Close() {

@@ -25,20 +25,7 @@ import (
 var errLog = log.New(os.Stderr, "[MW:proxy]", 0)
 
 // NewDo ...
-func NewDo() (http.HandlerFunc, error) {
-	tr := &http.Transport{
-		// Proxy: http.ProxyFromEnvironment,
-		DialContext: (&net.Dialer{
-			Timeout:   60 * time.Second,
-			KeepAlive: 120 * time.Second,
-		}).DialContext,
-		ResponseHeaderTimeout: 60 * time.Second,
-		TLSHandshakeTimeout:   30 * time.Second,
-		MaxIdleConns:          0, // Zero means no limit.
-		MaxIdleConnsPerHost:   1500,
-		IdleConnTimeout:       0,
-	}
-
+func NewDo(tr *http.Transport) (http.HandlerFunc, error) {
 	client := &http.Client{Transport: tr}
 
 	pr := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

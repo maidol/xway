@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -27,22 +28,27 @@ type Options struct {
 	DBHost     string
 	DBUserName string
 	DBPassword string
+	DBMaxOpen  int
 	DBMaxIdle  int
 	// DBConnMaxLifetime second
-	DBConnMaxLifetime int
+	DBConnMaxLifetime time.Duration
 
 	GatewayDBName string
 
-	RedisHost     string
-	RedisPassword string
-	RedisDB       int
-	RedisMaxIdle  int
+	RedisHost      string
+	RedisPassword  string
+	RedisDB        int
+	RedisWait      bool
+	RedisMaxActive int
+	RedisMaxIdle   int
 	// RedisConnIdleTimeout second
-	RedisConnIdleTimeout int
+	RedisConnIdleTimeout time.Duration
 
-	// ProxyConnKeepAlive second
-	ProxyConnKeepAlive       int
+	ProxyMaxIdleConns        int
 	ProxyMaxIdleConnsPerHost int
+	// ProxyConnKeepAlive second
+	ProxyConnKeepAlive   time.Duration
+	ProxyIdleConnTimeout time.Duration
 }
 
 type SeverityFlag struct {
@@ -110,8 +116,9 @@ func ParseCommandLine() (options Options, err error) {
 	flag.StringVar(&options.DBHost, "dbHost", "127.0.0.1:3306", "db server")
 	flag.StringVar(&options.DBUserName, "dbUserName", "", "db username")
 	flag.StringVar(&options.DBPassword, "dbPassword", "", "db password")
+	flag.IntVar(&options.DBMaxOpen, "dbMaxOpen", 0, "db maxopen")
 	flag.IntVar(&options.DBMaxIdle, "dbMaxIdle", 1000, "db maxidle")
-	flag.IntVar(&options.DBConnMaxLifetime, "dbConnMaxLifetime", 60, "db Conn MaxLifetime(second)")
+	flag.DurationVar(&options.DBConnMaxLifetime, "dbConnMaxLifetime", 60*time.Second, "db Conn MaxLifetime(second)")
 
 	// gateway db
 	flag.StringVar(&options.GatewayDBName, "gatewayDBName", "cw_api_gateway", "gateway dbname")
@@ -120,11 +127,16 @@ func ParseCommandLine() (options Options, err error) {
 	flag.StringVar(&options.RedisHost, "redisHost", "127.0.0.1:6379", "redis server")
 	flag.StringVar(&options.RedisPassword, "redisPassword", "", "redis password")
 	flag.IntVar(&options.RedisDB, "redisDB", 0, "redis db num")
+	flag.BoolVar(&options.RedisWait, "redisWait", false, "redis db wait")
+	flag.IntVar(&options.RedisMaxActive, "redisMaxActive", 0, "redis db maxactive")
 	flag.IntVar(&options.RedisMaxIdle, "redisMaxIdle", 1000, "redis db maxidle")
-	flag.IntVar(&options.RedisConnIdleTimeout, "redisConnIdleTimeout", 240, "redis db Conn IdleTimeout(second)")
+	flag.DurationVar(&options.RedisConnIdleTimeout, "redisConnIdleTimeout", 240*time.Second, "redis db Conn IdleTimeout(second)")
 
 	// proxy
-	flag.IntVar(&options.ProxyConnKeepAlive, "proxyConnKeepAlive", 30, "proxy Conn KeepAlive(second)")
+	flag.IntVar(&options.ProxyMaxIdleConns, "proxyMaxIdleConns", 0, "proxy MaxIdleConns")
+	flag.IntVar(&options.ProxyMaxIdleConnsPerHost, "proxyMaxIdleConnsPerHost", 1000, "proxy MaxIdleConnsPerHost")
+	flag.DurationVar(&options.ProxyConnKeepAlive, "proxyConnKeepAlive", 30*time.Second, "proxy Conn KeepAlive(second)")
+	flag.DurationVar(&options.ProxyIdleConnTimeout, "proxyIdleConnTimeout", 90*time.Second, "proxy IdleConnTimeout(second)")
 
 	flag.Parse()
 
