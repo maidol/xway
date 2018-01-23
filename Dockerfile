@@ -1,6 +1,7 @@
 # FROM scratch
 # ADD ca-certificates.crt /etc/ssl/certs/  # when use https, resolve Go’s x509 error
 FROM alpine:latest
+RUN echo 1024 65535 > /proc/sys/net/ipv4/ip_local_port_range
 ADD app /
 EXPOSE 9799
 EXPOSE 9788
