@@ -18,6 +18,7 @@ type Registry struct {
 	redisPool       *redis.Pool
 	dbPool          *sql.DB
 	transport       *http.Transport
+	serviceOptions  interface{}
 }
 
 // MiddlewareSpec ...
@@ -84,6 +85,14 @@ func (r *Registry) SetTransport(tr *http.Transport) {
 
 func (r *Registry) GetTransport() *http.Transport {
 	return r.transport
+}
+
+func (r *Registry) SetSvcOptions(opt interface{}) {
+	r.serviceOptions = opt
+}
+
+func (r *Registry) GetSvcOptions() interface{} {
+	return r.serviceOptions
 }
 
 func (r *Registry) Close() {

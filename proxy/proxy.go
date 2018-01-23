@@ -26,7 +26,7 @@ var errLog = log.New(os.Stderr, "[MW:proxy]", 0)
 
 // NewDo ...
 func NewDo(tr *http.Transport) (http.HandlerFunc, error) {
-	client := &http.Client{Transport: tr}
+	client := &http.Client{Transport: tr, Timeout: 30 * time.Second}
 
 	pr := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// u, err := url.Parse("http://192.168.2.102:8708" + r.URL.String())

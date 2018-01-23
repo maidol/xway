@@ -282,6 +282,7 @@ func Run(registry *plugin.Registry) error {
 	}
 	// fmt.Printf("加载配置options: %v\n", options)
 	// fmt.Println("初始化......")
+	registry.SetSvcOptions(options)
 
 	// appLogger.Info("Starting......")
 	s := NewService(options, registry)

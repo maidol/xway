@@ -44,7 +44,7 @@ func (pc *ProxyController) getStats(w http.ResponseWriter, r *http.Request, para
 	rds := registry.GetRedisPool().Stats()
 	tr := registry.GetTransport()
 	proxy := map[string]interface{}{"maxIdleConns": tr.MaxIdleConns, "maxIdleConncPerHost": tr.MaxIdleConnsPerHost, "idleTimeout": tr.IdleConnTimeout}
-	stats := map[string]interface{}{"db": db, "redis": rds, "proxy": proxy}
+	stats := map[string]interface{}{"serviceOptions": registry.GetSvcOptions(), "db": db, "redis": rds, "proxy": proxy}
 	return stats, nil
 }
 
