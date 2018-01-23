@@ -39,6 +39,10 @@ type Options struct {
 	RedisMaxIdle  int
 	// RedisConnIdleTimeout second
 	RedisConnIdleTimeout int
+
+	// ProxyConnKeepAlive second
+	ProxyConnKeepAlive       int
+	ProxyMaxIdleConnsPerHost int
 }
 
 type SeverityFlag struct {
@@ -118,6 +122,9 @@ func ParseCommandLine() (options Options, err error) {
 	flag.IntVar(&options.RedisDB, "redisDB", 0, "redis db num")
 	flag.IntVar(&options.RedisMaxIdle, "redisMaxIdle", 1000, "redis db maxidle")
 	flag.IntVar(&options.RedisConnIdleTimeout, "redisConnIdleTimeout", 240, "redis db Conn IdleTimeout(second)")
+
+	// proxy
+	flag.IntVar(&options.ProxyConnKeepAlive, "proxyConnKeepAlive", 30, "proxy Conn KeepAlive(second)")
 
 	flag.Parse()
 
