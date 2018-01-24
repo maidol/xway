@@ -1,7 +1,6 @@
 package authtoken
 
 import (
-	"context"
 	"database/sql"
 	"fmt"
 	"math"
@@ -112,10 +111,10 @@ func New(opt interface{}) negroni.Handler {
 func clientAuth(clientId string, registry *plugin.Registry) (*appClient, error) {
 	db := registry.GetDBPool()
 	ac := &appClient{}
-	// row := db.QueryRow("select clientId, privateKey, status from apps where clientId=?", clientId)
-	ctx, cl := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cl()
-	row := db.QueryRowContext(ctx, "select clientId, privateKey, status from apps where clientId=?", clientId)
+	row := db.QueryRow("select clientId, privateKey, status from apps where clientId=?", clientId)
+	// ctx, cl := context.WithTimeout(context.Background(), 30*time.Second)
+	// defer cl()
+	// row := db.QueryRowContext(ctx, "select clientId, privateKey, status from apps where clientId=?", clientId)
 	if err := row.Scan(&ac.clientId, &ac.privateKey, &ac.status); err != nil {
 		if err == sql.ErrNoRows {
 			e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeClientException, err.Error())
@@ -144,7 +143,8 @@ func getToken(token string, registry *plugin.Registry) (map[string]string, error
 	}()
 	// 读取token, 验证权限
 	tk := "cw:gateway:token:" + token
-	v, err := redis.DoWithTimeout(rdc, 10*time.Second, "HGETALL", tk)
+	v, err := rdc.Do("HGETALL", tk)
+	// v, err := redis.DoWithTimeout(rdc, 10*time.Second, "HGETALL", tk)
 	if err != nil {
 		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeInternal, err.Error())
 		return nil, e
