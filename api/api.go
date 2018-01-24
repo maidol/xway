@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"runtime"
 	"strings"
 
 	en "xway/engine"
@@ -45,7 +46,8 @@ func (pc *ProxyController) getStats(w http.ResponseWriter, r *http.Request, para
 	rds := registry.GetRedisPool().Stats()
 	tr := registry.GetTransport()
 	proxy := map[string]interface{}{"maxIdleConns": tr.MaxIdleConns, "maxIdleConncPerHost": tr.MaxIdleConnsPerHost, "idleTimeout": tr.IdleConnTimeout}
-	stats := map[string]interface{}{"serviceOptions": registry.GetSvcOptions(), "db": db, "redis": rds, "proxy": proxy}
+	gcount := runtime.NumGoroutine()
+	stats := map[string]interface{}{"gcount": gcount, "serviceOptions": registry.GetSvcOptions(), "db": db, "redis": rds, "proxy": proxy}
 	return stats, nil
 }
 
