@@ -1,6 +1,7 @@
 package frontend
 
 import (
+	"fmt"
 	"net/http"
 
 	"xway/context"
@@ -54,6 +55,10 @@ func hasError(r *http.Request) bool {
 	xwayCtx := xwaycontext.DefaultXWayContext(r.Context())
 	err := xwayCtx.Map["error"]
 	if err != nil {
+		e, ok := err.(error)
+		if ok {
+			fmt.Printf(`[frontend] xwayCtx.Map["error"]: %v\n`, e)
+		}
 		return true
 	}
 	return false
