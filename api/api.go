@@ -25,6 +25,7 @@ func InitProxyController(ng en.Engine, stats en.StatsProvider, router *mux.Route
 	router.NotFoundHandler = http.HandlerFunc(c.handleError)
 
 	router.HandleFunc("/v2/status", handlerWithBody(c.getStatus)).Methods("GET")
+	router.HandleFunc("/v2/gc", handlerWithBody(c.gc)).Methods("GET")
 	router.HandleFunc("/v2/stats", handlerWithBody(c.getStats)).Methods("GET")
 	router.HandleFunc("/v2/router/restore", handlerWithBody(c.restoreRouter)).Methods("GET")
 	router.HandleFunc("/v2/db/reset", handlerWithBody(c.resetDB)).Methods("GET")
@@ -35,6 +36,13 @@ func (pc *ProxyController) handleError(w http.ResponseWriter, r *http.Request) {
 }
 
 func (pc *ProxyController) getStatus(w http.ResponseWriter, r *http.Request, params map[string]string, body []byte) (interface{}, error) {
+	return Response{
+		"Status": "ok",
+	}, nil
+}
+
+func (pc *ProxyController) gc(w http.ResponseWriter, r *http.Request, params map[string]string, body []byte) (interface{}, error) {
+	runtime.GC()
 	return Response{
 		"Status": "ok",
 	}, nil
