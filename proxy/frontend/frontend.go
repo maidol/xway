@@ -1,7 +1,10 @@
 package frontend
 
 import (
+	"fmt"
 	"net/http"
+	"strconv"
+	"time"
 
 	"xway/context"
 	en "xway/engine"
@@ -54,11 +57,17 @@ func hasError(r *http.Request) bool {
 	xwayCtx := xwaycontext.DefaultXWayContext(r.Context())
 	err := xwayCtx.Map["error"]
 	if err != nil {
-		// // TODO: 需要优化错误日志
-		// e, ok := err.(error)
-		// if ok {
-		// 	fmt.Printf("[frontend] url: %v, xwayCtx.Map[\"error\"]: %v\n", r.URL, e)
-		// }
+		// TODO: 需要优化错误日志
+		e, ok := err.(error)
+		if ok {
+			rdc := xwayCtx.Registry.GetRedisPool().Get()
+			defer rdc.Close()
+			tk := "cw:gateway:err:" + strconv.FormatInt(time.Now().UnixNano(), 10)
+			_, re := rdc.Do("SET", tk, e.Error())
+			if re != nil {
+				fmt.Println("[frontend] redis rdc.Do(SET) err:", re)
+			}
+		}
 		return true
 	}
 	return false

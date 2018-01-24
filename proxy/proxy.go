@@ -131,6 +131,14 @@ func sendResponse(w http.ResponseWriter, header http.Header, statusCode int, bod
 }
 
 func logProxyError(r *http.Request, err error) {
+	xwayCtx := xwaycontext.DefaultXWayContext(r.Context())
+	rdc := xwayCtx.Registry.GetRedisPool().Get()
+	defer rdc.Close()
+	tk := "cw:gateway:err:" + strconv.FormatInt(time.Now().UnixNano(), 10)
+	_, re := rdc.Do("SET", tk, err.Error())
+	if re != nil {
+		fmt.Println("[frontend] redis rdc.Do(SET) err:", re)
+	}
 	// // TODO: 优化日志记录, 精简请求头和body数据
 	// errLog.Printf("======http proxy occur err: begin======\n")
 	// errLog.Printf("request option: %+v\n", r)
