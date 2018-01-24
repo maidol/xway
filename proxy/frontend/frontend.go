@@ -58,7 +58,7 @@ func hasError(r *http.Request) bool {
 		// TODO: 需要优化错误日志
 		e, ok := err.(error)
 		if ok {
-			fmt.Printf(`[frontend] url: %v, xwayCtx.Map["error"]: %v\n`, r.URL, e)
+			fmt.Printf("[frontend] url: %v, xwayCtx.Map[\"error\"]: %v\n", r.URL, e)
 		}
 		return true
 	}
