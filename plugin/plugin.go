@@ -10,6 +10,11 @@ import (
 	"github.com/urfave/negroni"
 )
 
+// XUtil the common method interface, sample: Service instance
+type XUtil interface {
+	ResetDB() error
+}
+
 // Registry contains common obj.
 type Registry struct {
 	router router.Router
@@ -19,6 +24,7 @@ type Registry struct {
 	dbPool          *sql.DB
 	transport       *http.Transport
 	serviceOptions  interface{}
+	svc             XUtil
 }
 
 // MiddlewareSpec ...
@@ -93,6 +99,14 @@ func (r *Registry) SetSvcOptions(opt interface{}) {
 
 func (r *Registry) GetSvcOptions() interface{} {
 	return r.serviceOptions
+}
+
+func (r *Registry) SetSvc(svc XUtil) {
+	r.svc = svc
+}
+
+func (r *Registry) GetSvc() XUtil {
+	return r.svc
 }
 
 func (r *Registry) Close() {

@@ -94,6 +94,20 @@ func (s *Service) initDB() error {
 	return nil
 }
 
+// ResetDB mysql
+func (s *Service) ResetDB() error {
+	db, err := mysql.NewPool(mysql.Options{UserName: s.options.DBUserName, Password: s.options.DBPassword, Address: s.options.DBHost, DBName: s.options.GatewayDBName, MaxOpen: s.options.DBMaxOpen, MaxIdle: s.options.DBMaxIdle, MaxLifetime: s.options.DBConnMaxLifetime})
+	if err != nil {
+		return err
+	}
+	odb := s.registry.GetDBPool()
+	if odb != nil {
+		odb.Close()
+	}
+	s.registry.SetDBPool(db)
+	return nil
+}
+
 func (s *Service) initEngine() error {
 	// init engine
 	if len(s.options.EtcdNodes) == 0 {
@@ -289,6 +303,7 @@ func Run(registry *plugin.Registry) error {
 	if err := s.load(); err != nil {
 		return fmt.Errorf("service.load failure: %s", err)
 	}
+	registry.SetSvc(s)
 
 	// start server
 	fmt.Println("[start server]")

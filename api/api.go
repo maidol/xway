@@ -26,6 +26,7 @@ func InitProxyController(ng en.Engine, stats en.StatsProvider, router *mux.Route
 	router.HandleFunc("/v2/status", handlerWithBody(c.getStatus)).Methods("GET")
 	router.HandleFunc("/v2/stats", handlerWithBody(c.getStats)).Methods("GET")
 	router.HandleFunc("/v2/router/restore", handlerWithBody(c.restoreRouter)).Methods("GET")
+	router.HandleFunc("/v2/db/reset", handlerWithBody(c.resetDB)).Methods("GET")
 }
 
 func (pc *ProxyController) handleError(w http.ResponseWriter, r *http.Request) {
@@ -100,6 +101,18 @@ func (pc *ProxyController) restoreRouter(w http.ResponseWriter, r *http.Request,
 		return nil, fmt.Errorf("pc.ng.ReloadFrontendsFromDB failure: %v", err)
 	}
 	return arr, nil
+}
+
+func (pc *ProxyController) resetDB(w http.ResponseWriter, r *http.Request, params map[string]string, body []byte) (interface{}, error) {
+	registry := pc.ng.GetRegistry()
+	u := registry.GetSvc()
+	err := u.ResetDB()
+	if err != nil {
+		return nil, err
+	}
+	return Response{
+		"Status": "ok",
+	}, nil
 }
 
 type Response map[string]interface{}
