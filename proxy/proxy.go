@@ -131,16 +131,17 @@ func sendResponse(w http.ResponseWriter, header http.Header, statusCode int, bod
 }
 
 func logProxyError(r *http.Request, err error) {
-	errLog.Printf("======http proxy occur err: begin======\n")
-	errLog.Printf("request option: %+v\n", r)
-	errLog.Printf("err message: %v\n", err)
-	body, e := ioutil.ReadAll(r.Body)
-	if e == nil {
-		errLog.Printf("request body: %s\n", body)
-	} else {
-		errLog.Printf("request body ioutil.ReadAll err: %v\n", e)
-	}
-	errLog.Printf("======http proxy occur err: end======\n")
+	// // TODO: 优化日志记录, 精简请求头和body数据
+	// errLog.Printf("======http proxy occur err: begin======\n")
+	// errLog.Printf("request option: %+v\n", r)
+	// errLog.Printf("err message: %v\n", err)
+	// body, e := ioutil.ReadAll(r.Body)
+	// if e == nil {
+	// 	errLog.Printf("request body: %s\n", body)
+	// } else {
+	// 	errLog.Printf("request body ioutil.ReadAll err: %v\n", e)
+	// }
+	// errLog.Printf("======http proxy occur err: end======\n")
 }
 
 // New ...
