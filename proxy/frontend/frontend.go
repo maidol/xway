@@ -57,7 +57,7 @@ func hasError(r *http.Request) bool {
 	if err != nil {
 		e, ok := err.(error)
 		if ok {
-			fmt.Printf(`[frontend] xwayCtx.Map["error"]: %v\n`, e)
+			fmt.Printf(`[frontend] url: %v, xwayCtx.Map["error"]: %v\n`, r.URL, e)
 		}
 		return true
 	}
