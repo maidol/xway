@@ -69,8 +69,14 @@ func NewDo(tr *http.Transport) (http.HandlerFunc, error) {
 		// TODO: 优化并精简错误处理代码logProxyError
 		resp, err := client.Do(outReq)
 		if err != nil {
+			var d []byte
+			var respmsg string
+			if resp != nil {
+				d, _ = ioutil.ReadAll(resp.Body)
+				respmsg = fmt.Sprintf(", [resp状态码]:%v, resp.body:%s", resp.StatusCode, d)
+			}
 			// fmt.Printf("[MW:proxy] client.Do err: %v\n", err)
-			e := xerror.NewRequestError(xemun.RetProxyError, xemun.ECodeProxyFailed, "client.Do err: "+err.Error())
+			e := xerror.NewRequestError(xemun.RetProxyError, xemun.ECodeProxyFailed, "client.Do err: "+err.Error()+respmsg)
 			e.Write(w)
 			logProxyError(outReq, e)
 			return
