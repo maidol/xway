@@ -135,9 +135,9 @@ func logProxyError(r *http.Request, err error) {
 	rdc := xwayCtx.Registry.GetRedisPool().Get()
 	defer rdc.Close()
 	tk := "cw:gateway:err:" + strconv.FormatInt(time.Now().UnixNano(), 10)
-	_, re := rdc.Do("SET", tk, err.Error())
+	_, re := rdc.Do("SET", tk, "[MW:proxy:logProxyError] "+err.Error())
 	if re != nil {
-		fmt.Println("[frontend] redis rdc.Do(SET) err:", re)
+		fmt.Println("[MW:proxy:logProxyError] redis rdc.Do(SET) err:", re)
 	}
 	// // TODO: 优化日志记录, 精简请求头和body数据
 	// errLog.Printf("======http proxy occur err: begin======\n")

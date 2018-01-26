@@ -63,9 +63,9 @@ func hasError(r *http.Request) bool {
 			rdc := xwayCtx.Registry.GetRedisPool().Get()
 			defer rdc.Close()
 			tk := "cw:gateway:err:" + strconv.FormatInt(time.Now().UnixNano(), 10)
-			_, re := rdc.Do("SET", tk, e.Error())
+			_, re := rdc.Do("SET", tk, "[MW:frontend:hasError] "+e.Error())
 			if re != nil {
-				fmt.Println("[frontend] redis rdc.Do(SET) err:", re)
+				fmt.Println("[MW:frontend:hasError] redis rdc.Do(SET) err:", re)
 			}
 		}
 		return true
