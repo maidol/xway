@@ -130,7 +130,7 @@ func New(opt interface{}) negroni.Handler {
 // }
 
 // 验证clientId的存在和有效性
-// 查询clientInfo
+// 查询clientInfo(redis)
 func clientAuth(clientId string, registry *plugin.Registry) (*appClient, error) {
 	rdc := registry.GetRedisPool().Get()
 	defer func() {
@@ -149,7 +149,7 @@ func clientAuth(clientId string, registry *plugin.Registry) (*appClient, error) 
 		return nil, e
 	}
 	if v == nil || len(v) == 0 {
-		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeClientException, err.Error())
+		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeClientException, "不存在的client")
 		return nil, e
 	}
 	err = redis.ScanStruct(v, ac)
