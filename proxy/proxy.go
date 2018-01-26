@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -77,7 +78,12 @@ func NewDo(tr *http.Transport) (http.HandlerFunc, error) {
 			case *url.Error:
 				if ue.Timeout() {
 					// client.Do请求超时
-					err = errors.New("request timeout, " + err.Error())
+					err = errors.New("request was timeout, " + err.Error())
+					break
+				}
+				if ue.Err == context.Canceled {
+					err = errors.New("request was canceled, " + err.Error())
+					break
 				}
 			// case *url.EscapeError:
 			// case *url.InvalidHostError:
