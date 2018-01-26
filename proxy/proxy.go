@@ -78,11 +78,11 @@ func NewDo(tr *http.Transport) (http.HandlerFunc, error) {
 			case *url.Error:
 				if ue.Timeout() {
 					// client.Do请求超时
-					err = errors.New("request was timeout: " + err.Error())
+					ue.Err = errors.New("request was timeout: " + ue.Err.Error())
 					break
 				}
 				if ue.Err == context.Canceled {
-					err = errors.New("request was canceled: " + err.Error())
+					ue.Err = errors.New("request was canceled: " + ue.Err.Error())
 					break
 				}
 			// case *url.EscapeError:
