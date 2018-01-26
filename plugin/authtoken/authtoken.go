@@ -114,7 +114,7 @@ func New(opt interface{}) negroni.Handler {
 // 	// ctx, cl := context.WithTimeout(context.Background(), 30*time.Second)
 // 	// defer cl()
 // 	// row := db.QueryRowContext(ctx, "select clientId, privateKey, status from apps where clientId=?", clientId)
-// 	if err := row.Scan(&ac.clientId, &ac.privateKey, &ac.status); err != nil {
+// 	if err := row.Scan(&ac.ClientId, &ac.PrivateKey, &ac.Status); err != nil {
 // 		if err == sql.ErrNoRows {
 // 			e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeClientException, err.Error())
 // 			return nil, e
@@ -122,7 +122,7 @@ func New(opt interface{}) negroni.Handler {
 // 		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeInternal, "row.Scan err: "+err.Error())
 // 		return nil, e
 // 	}
-// 	if ac.status != 0 {
+// 	if ac.Status != 0 {
 // 		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeClientException, "client.status!=0")
 // 		return ac, e
 // 	}
@@ -192,6 +192,8 @@ func getToken(token string, registry *plugin.Registry) (map[string]string, error
 }
 
 func (at *AuthToken) accessToken(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
+	// TODO: 优化, 多次redis请求可合并为一次
+
 	// 验证请求参数
 	qd := new(QueryData)
 	if errs := binding.URL(r, qd); errs != nil {
@@ -239,6 +241,8 @@ func (at *AuthToken) accessToken(rw http.ResponseWriter, r *http.Request, next h
 }
 
 func (at *AuthToken) clientCredentials(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
+	// TODO: 优化, 多次redis请求可合并为一次
+
 	// 验证请求参数
 	hd := new(HeaderData)
 	if errs := binding.Header(r, hd); errs != nil {
