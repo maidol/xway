@@ -1,7 +1,6 @@
 package authtoken
 
 import (
-	"database/sql"
 	"fmt"
 	"math"
 	"net/http"
@@ -88,9 +87,9 @@ func (hd *HeaderData) FieldMap(req *http.Request) binding.FieldMap {
 }
 
 type appClient struct {
-	clientId   string
-	privateKey string
-	status     int
+	ClientId   string `redis:"clientId"`
+	PrivateKey string `redis:"privateKey"`
+	Status     int    `redis:"status"`
 }
 
 // New ...
@@ -105,25 +104,60 @@ func New(opt interface{}) negroni.Handler {
 	}
 }
 
+// // 验证clientId的存在和有效性
+// // TODO: (计划优化)
+// // 查询clientInfo(目前from mysql)
+// func clientAuth(clientId string, registry *plugin.Registry) (*appClient, error) {
+// 	db := registry.GetDBPool()
+// 	ac := &appClient{}
+// 	row := db.QueryRow("select clientId, privateKey, status from apps where clientId=?", clientId)
+// 	// ctx, cl := context.WithTimeout(context.Background(), 30*time.Second)
+// 	// defer cl()
+// 	// row := db.QueryRowContext(ctx, "select clientId, privateKey, status from apps where clientId=?", clientId)
+// 	if err := row.Scan(&ac.clientId, &ac.privateKey, &ac.status); err != nil {
+// 		if err == sql.ErrNoRows {
+// 			e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeClientException, err.Error())
+// 			return nil, e
+// 		}
+// 		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeInternal, "row.Scan err: "+err.Error())
+// 		return nil, e
+// 	}
+// 	if ac.status != 0 {
+// 		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeClientException, "client.status!=0")
+// 		return ac, e
+// 	}
+// 	return ac, nil
+// }
+
 // 验证clientId的存在和有效性
-// TODO: (计划优化)
-// 查询clientInfo(目前from mysql)
+// 查询clientInfo
 func clientAuth(clientId string, registry *plugin.Registry) (*appClient, error) {
-	db := registry.GetDBPool()
-	ac := &appClient{}
-	row := db.QueryRow("select clientId, privateKey, status from apps where clientId=?", clientId)
-	// ctx, cl := context.WithTimeout(context.Background(), 30*time.Second)
-	// defer cl()
-	// row := db.QueryRowContext(ctx, "select clientId, privateKey, status from apps where clientId=?", clientId)
-	if err := row.Scan(&ac.clientId, &ac.privateKey, &ac.status); err != nil {
-		if err == sql.ErrNoRows {
-			e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeClientException, err.Error())
-			return nil, e
+	rdc := registry.GetRedisPool().Get()
+	defer func() {
+		// 重要: 释放客户端
+		if err := rdc.Close(); err != nil {
+			// TODO: 处理错误, 记录日志
+			fmt.Printf("[AuthToken clientAuth] rdc.Close err: %v\n", err)
 		}
-		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeInternal, "row.Scan err "+err.Error())
+	}()
+	ac := &appClient{}
+	// 读取client, 验证权限
+	tk := "cw:app:" + clientId
+	v, err := redis.Values(rdc.Do("HGETALL", tk))
+	if err != nil {
+		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeInternal, "rdc.Do err: "+err.Error())
 		return nil, e
 	}
-	if ac.status != 0 {
+	if v == nil || len(v) == 0 {
+		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeClientException, err.Error())
+		return nil, e
+	}
+	err = redis.ScanStruct(v, ac)
+	if err != nil {
+		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeInternal, "redis.ScanStruct err: "+err.Error())
+		return nil, e
+	}
+	if ac.Status != 0 {
 		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeClientException, "client.status!=0")
 		return ac, e
 	}
@@ -227,7 +261,7 @@ func (at *AuthToken) clientCredentials(rw http.ResponseWriter, r *http.Request, 
 	}
 	// TODO: 比较签名, clientId, timeLine, sign, path, query
 	text := generateOriginalText4Sign(hd, r)
-	if s, b := checkHamcSign(text, hd.Sign, app.privateKey); !b {
+	if s, b := checkHamcSign(text, hd.Sign, app.PrivateKey); !b {
 		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeHmacsha1SignError, "sign签名不匹配: "+hd.Sign+", 正确签名: "+s+", 原始值: "+text)
 		at.RequestError(rw, r, e)
 		return

@@ -5,12 +5,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"runtime"
 	"strings"
 
 	en "xway/engine"
 
+	"github.com/garyburd/redigo/redis"
 	"github.com/gorilla/mux"
 )
 
@@ -29,6 +31,7 @@ func InitProxyController(ng en.Engine, stats en.StatsProvider, router *mux.Route
 	router.HandleFunc("/v2/stats", handlerWithBody(c.getStats)).Methods("GET")
 	router.HandleFunc("/v2/router/restore", handlerWithBody(c.restoreRouter)).Methods("GET")
 	router.HandleFunc("/v2/db/reset", handlerWithBody(c.resetDB)).Methods("GET")
+	router.HandleFunc("/v2/apps/restore", handlerWithBody(c.restoreApps)).Methods("GET")
 }
 
 func (pc *ProxyController) handleError(w http.ResponseWriter, r *http.Request) {
@@ -70,6 +73,62 @@ func (pc *ProxyController) restoreRouter(w http.ResponseWriter, r *http.Request,
 	if err != nil {
 		return nil, err
 	}
+	arr, err := scanMapString(rows)
+	if err != nil {
+		return nil, err
+	}
+	// 加载到engine
+	err = pc.ng.ReloadFrontendsFromDB(arr)
+	if err != nil {
+		return nil, fmt.Errorf("pc.ng.ReloadFrontendsFromDB failure: %v", err)
+	}
+	return arr, nil
+}
+
+func (pc *ProxyController) resetDB(w http.ResponseWriter, r *http.Request, params map[string]string, body []byte) (interface{}, error) {
+	registry := pc.ng.GetRegistry()
+	u := registry.GetSvc()
+	err := u.ResetDB()
+	if err != nil {
+		return nil, err
+	}
+	return Response{
+		"Status": "ok",
+	}, nil
+}
+
+func (pc *ProxyController) restoreApps(w http.ResponseWriter, r *http.Request, params map[string]string, body []byte) (interface{}, error) {
+	registry := pc.ng.GetRegistry()
+	// 读取
+	db := registry.GetDBPool()
+	rows, err := db.Query("select clientId, clientName, groupId, publicKey, privateKey, domainUrl, redirectUrl, config, status, createDate, updateDate from apps")
+	if err != nil {
+		return nil, err
+	}
+	result, err := scanMapString(rows)
+	if err != nil {
+		return nil, err
+	}
+	// 导入
+	rdc := registry.GetRedisPool().Get()
+	defer rdc.Close()
+	for _, val := range result {
+		args := redis.Args{}.Add("cw:app:" + val["clientId"]).AddFlat(val)
+		log.Printf("[restoreApp] HMSET %v\n", args)
+		err := rdc.Send("HMSET", args...)
+		if err != nil {
+			log.Printf("[restoreApp] Send HMSET err: %v\n", err)
+		}
+	}
+	err = rdc.Flush()
+	if err != nil {
+		log.Printf("[restoreApp] rdc.Flush err: %v\n", err)
+		return result, err
+	}
+	return result, nil
+}
+
+func scanMapString(rows *sql.Rows) ([]map[string]string, error) {
 	defer rows.Close()
 	columns, err := rows.Columns()
 	if err != nil {
@@ -103,26 +162,10 @@ func (pc *ProxyController) restoreRouter(w http.ResponseWriter, r *http.Request,
 		arr = append(arr, row)
 	}
 	if err := rows.Err(); err != nil {
+		// error that was encountered during iteration
 		return nil, err
-	}
-	// 加载到engine
-	err = pc.ng.ReloadFrontendsFromDB(arr)
-	if err != nil {
-		return nil, fmt.Errorf("pc.ng.ReloadFrontendsFromDB failure: %v", err)
 	}
 	return arr, nil
-}
-
-func (pc *ProxyController) resetDB(w http.ResponseWriter, r *http.Request, params map[string]string, body []byte) (interface{}, error) {
-	registry := pc.ng.GetRegistry()
-	u := registry.GetSvc()
-	err := u.ResetDB()
-	if err != nil {
-		return nil, err
-	}
-	return Response{
-		"Status": "ok",
-	}, nil
 }
 
 type Response map[string]interface{}
