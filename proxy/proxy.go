@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -26,7 +27,9 @@ var errLog = log.New(os.Stderr, "[MW:proxy]", 0)
 
 // NewDo ...
 func NewDo(tr *http.Transport) (http.HandlerFunc, error) {
-	client := &http.Client{Transport: tr, Timeout: 30 * time.Second}
+	// 默认设置client 30s请求超时
+	reqTimeout := 30 * time.Second
+	client := &http.Client{Transport: tr, Timeout: reqTimeout}
 
 	pr := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// u, err := url.Parse("http://192.168.2.102:8708" + r.URL.String())
@@ -69,6 +72,17 @@ func NewDo(tr *http.Transport) (http.HandlerFunc, error) {
 		// TODO: 优化并精简错误处理代码logProxyError
 		resp, err := client.Do(outReq)
 		if err != nil {
+			// TODO: 需要处理client.Do的请求错误, 根据错误类型
+			switch ue := err.(type) {
+			case *url.Error:
+				if ue.Timeout() {
+					// client.Do请求超时
+					err = errors.New("request timeout, " + err.Error())
+				}
+			// case *url.EscapeError:
+			// case *url.InvalidHostError:
+			default:
+			}
 			var d []byte
 			var respmsg string
 			if resp != nil {
@@ -137,6 +151,7 @@ func logProxyError(r *http.Request, err error) {
 	tk := "cw:gateway:err:" + strconv.FormatInt(time.Now().UnixNano(), 10)
 	_, re := rdc.Do("SET", tk, "[MW:proxy:logProxyError] "+err.Error())
 	if re != nil {
+		// TODO: 所有的日志不要直接输出到stdout/stderr(其是同步阻塞操作), 而选择输出到文件(最好选择ssd)或管道方式或网络流(最好)
 		fmt.Println("[MW:proxy:logProxyError] redis rdc.Do(SET) err:", re)
 	}
 	// // TODO: 优化日志记录, 精简请求头和body数据
