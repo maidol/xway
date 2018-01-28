@@ -109,7 +109,7 @@ func (r *Registry) GetSvc() XUtil {
 	return r.svc
 }
 
-func (r *Registry) Close() {
+func (r *Registry) Release() {
 	if r.redisPool != nil {
 		r.redisPool.Close()
 	}
