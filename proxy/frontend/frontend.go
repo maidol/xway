@@ -1,10 +1,8 @@
 package frontend
 
 import (
-	"fmt"
 	"net/http"
-	"strconv"
-	"time"
+	"xway/utils/mq"
 
 	"xway/context"
 	en "xway/engine"
@@ -60,15 +58,37 @@ func hasError(r *http.Request) bool {
 		// TODO: 需要优化错误日志
 		e, ok := err.(error)
 		if ok {
-			rdc := xwayCtx.Registry.GetRedisPool().Get()
-			defer rdc.Close()
-			tk := "cw:gateway:err:" + strconv.FormatInt(time.Now().UnixNano(), 10)
-			_, re := rdc.Do("SET", tk, "[MW:frontend:hasError] "+e.Error())
-			if re != nil {
-				fmt.Println("[MW:frontend:hasError] redis rdc.Do(SET) err:", re)
-			}
+			tk := "cw:gateway:err:" + xwayCtx.RequestId
+			msg := "[MW:frontend:hasError] " + e.Error()
+			l := xwayCtx.Registry.GetMQProducer()
+			l.SendMessageAsync(&mq.Message{
+				Topic:   "gateway-error",
+				Key:     tk,
+				Content: msg,
+			})
 		}
 		return true
 	}
 	return false
 }
+
+// func hasError(r *http.Request) bool {
+// 	xwayCtx := xwaycontext.DefaultXWayContext(r.Context())
+// 	err := xwayCtx.Map["error"]
+// 	if err != nil {
+// 		// TODO: 需要优化错误日志
+// 		e, ok := err.(error)
+// 		if ok {
+// 			tk := "cw:gateway:err:" + xwayCtx.RequestId
+// 			msg:="[MW:frontend:hasError] " + e.Error()
+// 			l := xwayCtx.Registry.GetRedisPool().Get()
+// 			defer l.Close()
+// 			_, re := l.Do("SET", tk, msg)
+// 			if re != nil {
+// 				fmt.Println("[MW:frontend:hasError] redis l.Do(SET) err:", re)
+// 			}
+// 		}
+// 		return true
+// 	}
+// 	return false
+// }

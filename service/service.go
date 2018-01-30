@@ -11,9 +11,9 @@ import (
 	"sync"
 	"time"
 
-	logrus_logstash "github.com/bshuster-repo/logrus-logstash-hook"
+	// logrus_logstash "github.com/bshuster-repo/logrus-logstash-hook"
 	"github.com/gorilla/mux"
-	"github.com/sirupsen/logrus"
+	// "github.com/sirupsen/logrus"
 	"github.com/urfave/negroni"
 
 	"xway/api"
@@ -24,6 +24,7 @@ import (
 	"xway/proxy"
 	"xway/router"
 	"xway/router/xrouter"
+	"xway/utils/mq"
 	"xway/utils/mysql"
 	"xway/utils/redis"
 )
@@ -45,32 +46,32 @@ type Service struct {
 	watcherWg      sync.WaitGroup
 }
 
-var appLogger *logrus.Entry
+// var appLogger *logrus.Entry
 
-func init() {
-	logger := logrus.New()
-	logger.Level = logrus.InfoLevel
-	logger.Formatter = new(logrus.TextFormatter)
-	// logger.Out = os.Stdout
+// func init() {
+// 	logger := logrus.New()
+// 	logger.Level = logrus.InfoLevel
+// 	logger.Formatter = new(logrus.TextFormatter)
+// 	// logger.Out = os.Stdout
 
-	// conn, err := net.Dial("tcp", "logstash.mycompany.net:8911")
-	// if err != nil {
-	// 	logrus.Fatal(err)
-	// }
+// 	// conn, err := net.Dial("tcp", "logstash.mycompany.net:8911")
+// 	// if err != nil {
+// 	// 	logrus.Fatal(err)
+// 	// }
 
-	// hook := logrus_logstash.New(conn, logrus_logstash.DefaultFormatter(logrus.Fields{"type": "xway"}))
+// 	// hook := logrus_logstash.New(conn, logrus_logstash.DefaultFormatter(logrus.Fields{"type": "xway"}))
 
-	// if err != nil {
-	// 	logrus.Fatal(err)
-	// }
+// 	// if err != nil {
+// 	// 	logrus.Fatal(err)
+// 	// }
 
-	// logger.Hooks.Add(hook)
+// 	// logger.Hooks.Add(hook)
 
-	stdHook := logrus_logstash.New(os.Stdout, logrus_logstash.DefaultFormatter(logrus.Fields{"type": "xway"}))
-	logger.Hooks.Add(stdHook)
+// 	stdHook := logrus_logstash.New(os.Stdout, logrus_logstash.DefaultFormatter(logrus.Fields{"type": "xway"}))
+// 	logger.Hooks.Add(stdHook)
 
-	appLogger = logger.WithFields(logrus.Fields{"name": "app"})
-}
+// 	appLogger = logger.WithFields(logrus.Fields{"name": "app"})
+// }
 
 func NewService(options Options, registry *plugin.Registry) *Service {
 	return &Service{
@@ -123,6 +124,22 @@ func (s *Service) initEngine() error {
 		return err
 	}
 	s.ng = ng
+
+	return nil
+}
+
+func (s *Service) initMQ() error {
+	cfg := &mq.MqConfig{}
+	mq.LoadJsonConfig(cfg, s.options.KafkaConfigPath)
+	if s.options.KafkaAK != "" {
+		cfg.Ak = s.options.KafkaAK
+	}
+	if s.options.KafkaPassword != "" {
+		cfg.Password = s.options.KafkaPassword
+	}
+
+	producer := mq.NewProducer(cfg)
+	s.registry.SetMQProducer(producer)
 
 	return nil
 }
@@ -249,6 +266,11 @@ func (s *Service) load() error {
 		return fmt.Errorf("initDB failure: %v", err)
 	}
 	fmt.Println("[initDB success]")
+
+	if err := s.initMQ(); err != nil {
+		return fmt.Errorf("initMQ failure: %v", err)
+	}
+	fmt.Println("[initMQ success]")
 
 	if err := s.initEngine(); err != nil {
 		return fmt.Errorf("initEngine failure: %v", err)

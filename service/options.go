@@ -49,6 +49,10 @@ type Options struct {
 	// ProxyConnKeepAlive second
 	ProxyConnKeepAlive   time.Duration
 	ProxyIdleConnTimeout time.Duration
+
+	KafkaConfigPath string
+	KafkaAK         string
+	KafkaPassword   string
 }
 
 type SeverityFlag struct {
@@ -137,6 +141,11 @@ func ParseCommandLine() (options Options, err error) {
 	flag.IntVar(&options.ProxyMaxIdleConnsPerHost, "proxyMaxIdleConnsPerHost", 1000, "proxy MaxIdleConnsPerHost")
 	flag.DurationVar(&options.ProxyConnKeepAlive, "proxyConnKeepAlive", 30*time.Second, "proxy Conn KeepAlive(second)")
 	flag.DurationVar(&options.ProxyIdleConnTimeout, "proxyIdleConnTimeout", 90*time.Second, "proxy IdleConnTimeout(second)")
+
+	// kafka
+	flag.StringVar(&options.KafkaConfigPath, "kafkaConfigPath", "mq.json", "kafka config path")
+	flag.StringVar(&options.KafkaAK, "kafkaAK", "", "kafka access key")
+	flag.StringVar(&options.KafkaPassword, "kafkaPassword", "", "kafka password")
 
 	flag.Parse()
 

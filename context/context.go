@@ -11,10 +11,11 @@ type ContextKey struct {
 
 type XWayContext struct {
 	// originalRequest *http.Request
-	Map      map[interface{}]interface{}
-	Registry *plugin.Registry
-	UserName string
-	Password string
+	Map       map[interface{}]interface{}
+	Registry  *plugin.Registry
+	UserName  string
+	Password  string
+	RequestId string
 }
 
 // func (xc *XWayContext) GetOriginalRequest() *http.Request {

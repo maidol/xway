@@ -31,9 +31,9 @@ docker run --rm -v "$PWD":/go/src/xway -e CGO_ENABLED=0 -e GOOS=linux -w /go/src
 >- 启动
 
 ```bash
-GOMAXPROCS=2 app -etcd xxx:2379 -dbHost xxx:3306 -dbUserName xxx -dbPassword xxx -redisHost xxx:6379 -redisPassword xxx
+GOMAXPROCS=2 app -etcd xxx:2379 -dbHost xxx:3306 -dbUserName xxx -dbPassword xxx -redisHost xxx:6379 -redisPassword xxx -kafkaAK xxx -kafkaPassword xxx -kafkaConfigPath mq.test.json
 
-GOMAXPROCS=16 ./app -etcd xxx:2379 -dbHost xxx:3306 -dbUserName xxx -dbPassword xxx -redisHost xxx:6379 -redisPassword xxx -apiInterface 0.0.0.0 -dbMaxIdle 2000 -dbMaxOpen 2000 -redisMaxIdle 2000 -redisMaxActive 2000 --redisWait=true -proxyMaxIdleConnsPerHost 2000 -dbConnMaxLifetime 30s
+GOMAXPROCS=16 ./app -etcd xxx:2379 -dbHost xxx:3306 -dbUserName xxx -dbPassword xxx -redisHost xxx:6379 -redisPassword xxx -apiInterface 0.0.0.0 -dbMaxIdle 2000 -dbMaxOpen 2000 -redisMaxIdle 2000 -redisMaxActive 2000 --redisWait=true -proxyMaxIdleConnsPerHost 1500 -dbConnMaxLifetime 60s -kafkaAK xxx -kafkaPassword xxx -kafkaConfigPath mq.test.json
 ```
 
 ## etcdctl
@@ -54,4 +54,12 @@ etcdctl put /xway/frontends/f3/frontend '{\"routeId\":\"f3\",\"domainHost\":\"ea
 etcdctl put /xway/frontends/f4/frontend '{\"routeId\":\"f4\",\"domainHost\":\"eapi.jiaofucloud.cn\",\"routeUrl\":\"/nomux/hello/\",\"redirectHost\":\"192.168.2.102:8708\",\"forwardUrl\":\"/\",\"type\":\"http\",\"config\":{\"auth\":[\"oauth\"],\"operation\":[{\"rate\":\"0\"}]}}'
 
 etcdctl put /xway/frontends/f5/frontend '{\"routeId\":\"f5\",\"domainHost\":\"eapi.jiaofucloud.cn\",\"routeUrl\":\"/oauth/\",\"redirectHost\":\"192.168.2.162:8000\",\"forwardUrl\":\"/oauth/\",\"type\":\"http\",\"config\":{\"auth\":[],\"operation\":[{\"rate\":\"0\"}]}}'
+```
+
+## 压测
+
+```bash
+wrk -t16 -c2000 -d9000s -T30s --latency -H "Host: xxx" -H "sign: 8b34940d6b7433f323186a1585ddc2cfc3381d53" -H "timeline: 1515753182" -H "clientid: 20000" -H "timeline: 1515657796" "http://192.168.2.101:9799/gateway/nomux/hello?clientId=20000&accessToken=45860b9b69d04838b4e04eca68dbf1fd4de4a626"
+
+ab -n 10000000 -c 250 -k -H "Host: xxx" -H "sign: 8b34940d6b7433f323186a1585ddc2cfc3381d53" -H "timeline: 1515753182" -H "clientid: 20000" -H "timeline: 1515657796" "http://192.168.2.101:9799/gateway/nomux/hello?clientId=20000&accessToken=45860b9b69d04838b4e04eca68dbf1fd4de4a626"
 ```

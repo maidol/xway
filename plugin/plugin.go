@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"xway/router"
+	"xway/utils/mq"
 
 	"github.com/garyburd/redigo/redis"
 	"github.com/urfave/negroni"
@@ -25,6 +26,7 @@ type Registry struct {
 	transport       *http.Transport
 	serviceOptions  interface{}
 	svc             XUtil
+	mqProducer      *mq.MqProducer
 }
 
 // MiddlewareSpec ...
@@ -107,6 +109,14 @@ func (r *Registry) SetSvc(svc XUtil) {
 
 func (r *Registry) GetSvc() XUtil {
 	return r.svc
+}
+
+func (r *Registry) SetMQProducer(p *mq.MqProducer) {
+	r.mqProducer = p
+}
+
+func (r *Registry) GetMQProducer() *mq.MqProducer {
+	return r.mqProducer
 }
 
 func (r *Registry) Close() {
