@@ -3,17 +3,19 @@ package service
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
 	"os"
+	"runtime"
 	"strconv"
 	"sync"
 	"time"
 
 	logrus_logstash "github.com/bshuster-repo/logrus-logstash-hook"
 	"github.com/gorilla/mux"
-	"github.com/sirupsen/logrus"
+	logrus "github.com/sirupsen/logrus"
 	"github.com/urfave/negroni"
 
 	"xway/api"
@@ -24,8 +26,10 @@ import (
 	"xway/proxy"
 	"xway/router"
 	"xway/router/xrouter"
+	"xway/utils/mq"
 	"xway/utils/mysql"
 	"xway/utils/redis"
+	"xway/utils/xlog/kafka"
 )
 
 const (
@@ -45,38 +49,92 @@ type Service struct {
 	watcherWg      sync.WaitGroup
 }
 
-var appLogger *logrus.Entry
+// var appLogger *logrus.Entry
 
-func init() {
-	logger := logrus.New()
-	logger.Level = logrus.InfoLevel
-	logger.Formatter = new(logrus.TextFormatter)
-	// logger.Out = os.Stdout
+// func init() {
+// 	logger := logrus.New()
+// 	logger.Level = logrus.InfoLevel
+// 	logger.Formatter = new(logrus.TextFormatter)
+// 	// logger.Out = os.Stdout
 
-	// conn, err := net.Dial("tcp", "logstash.mycompany.net:8911")
-	// if err != nil {
-	// 	logrus.Fatal(err)
-	// }
+// 	// conn, err := net.Dial("tcp", "logstash.mycompany.net:8911")
+// 	// if err != nil {
+// 	// 	logrus.Fatal(err)
+// 	// }
 
-	// hook := logrus_logstash.New(conn, logrus_logstash.DefaultFormatter(logrus.Fields{"type": "xway"}))
+// 	// hook := logrus_logstash.New(conn, logrus_logstash.DefaultFormatter(logrus.Fields{"type": "xway"}))
 
-	// if err != nil {
-	// 	logrus.Fatal(err)
-	// }
+// 	// if err != nil {
+// 	// 	logrus.Fatal(err)
+// 	// }
 
-	// logger.Hooks.Add(hook)
+// 	// logger.Hooks.Add(hook)
 
-	stdHook := logrus_logstash.New(os.Stdout, logrus_logstash.DefaultFormatter(logrus.Fields{"type": "xway"}))
-	logger.Hooks.Add(stdHook)
+// 	stdHook := logrus_logstash.New(os.Stdout, logrus_logstash.DefaultFormatter(logrus.Fields{"type": "xway"}))
+// 	logger.Hooks.Add(stdHook)
 
-	appLogger = logger.WithFields(logrus.Fields{"name": "app"})
-}
+// 	appLogger = logger.WithFields(logrus.Fields{"name": "app"})
+// }
 
 func NewService(options Options, registry *plugin.Registry) *Service {
 	return &Service{
 		options:  options,
 		registry: registry,
 	}
+}
+
+func (s *Service) initLogger() {
+	logrus.SetLevel(s.options.LogSeverity.S)
+
+	if s.options.LogFormatter != nil {
+		logrus.SetOutput(os.Stdout)
+		logrus.SetFormatter(s.options.LogFormatter)
+		return
+	}
+	if s.options.Log == "console" {
+		logrus.SetOutput(os.Stdout)
+		logrus.SetFormatter(&logrus.TextFormatter{})
+		return
+	}
+	if s.options.Log == "json" {
+		logrus.SetOutput(os.Stdout)
+		logrus.SetFormatter(&logrus.JSONFormatter{})
+		return
+	}
+	if s.options.Log == "logstash" {
+		logrus.SetOutput(os.Stdout)
+		logrus.SetFormatter(&logrus_logstash.LogstashFormatter{Fields: logrus.Fields{"type": "logs"}})
+		return
+	}
+	if s.options.Log == "redis" {
+		return
+	}
+	var err error
+	if s.options.Log == "kafka" {
+		path := "/dev/null" // suport linux
+		if runtime.GOOS == "windows" {
+			path = "NUL" // suport windows
+		}
+		var devNull *os.File
+		devNull, err = os.OpenFile(path, os.O_WRONLY, 0)
+		if err == nil {
+			hid := strconv.FormatInt(time.Now().Unix(), 10)
+			levels := []logrus.Level{logrus.InfoLevel, logrus.ErrorLevel}
+			fm := &logrus.JSONFormatter{}
+			p := s.registry.GetMQProducer()
+			var hook *kafkalogrus.KafkaLogrusHook
+			hook, err = kafkalogrus.NewKafkaLogrusHook(hid, levels, fm, p, "gateway", true)
+			if err == nil {
+				logrus.SetOutput(devNull)
+				logrus.SetFormatter(&logrus.TextFormatter{DisableColors: true})
+				logrus.AddHook(hook)
+				return
+			}
+		}
+	}
+	logrus.SetOutput(os.Stdout)
+	logrus.SetFormatter(&logrus.TextFormatter{})
+	logrus.Warnf("Failed to initialized logger. Fallback to default: logger=%s, err=(%s)", s.options.Log, err)
 }
 
 func (s *Service) initDB() error {
@@ -123,6 +181,22 @@ func (s *Service) initEngine() error {
 		return err
 	}
 	s.ng = ng
+
+	return nil
+}
+
+func (s *Service) initMQ() error {
+	cfg := &mq.MqConfig{}
+	mq.LoadJsonConfig(cfg, s.options.KafkaConfigPath)
+	if s.options.KafkaAK != "" {
+		cfg.Ak = s.options.KafkaAK
+	}
+	if s.options.KafkaPassword != "" {
+		cfg.Password = s.options.KafkaPassword
+	}
+
+	producer := mq.NewProducer(cfg)
+	s.registry.SetMQProducer(producer)
 
 	return nil
 }
@@ -245,10 +319,19 @@ func (s *Service) initProxy() error {
 }
 
 func (s *Service) load() error {
+	if s.options.PidPath != "" {
+		ioutil.WriteFile(s.options.PidPath, []byte(fmt.Sprint(os.Getpid())), 0644)
+	}
+
 	if err := s.initDB(); err != nil {
 		return fmt.Errorf("initDB failure: %v", err)
 	}
 	fmt.Println("[initDB success]")
+
+	if err := s.initMQ(); err != nil {
+		return fmt.Errorf("initMQ failure: %v", err)
+	}
+	fmt.Println("[initMQ success]")
 
 	if err := s.initEngine(); err != nil {
 		return fmt.Errorf("initEngine failure: %v", err)
@@ -259,6 +342,9 @@ func (s *Service) load() error {
 		return fmt.Errorf("initProxy failure: %v", err)
 	}
 	fmt.Println("[initProxy success]")
+
+	// 放最后
+	s.initLogger()
 
 	return nil
 }

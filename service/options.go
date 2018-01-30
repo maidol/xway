@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	log "github.com/sirupsen/logrus"
+	logrus "github.com/sirupsen/logrus"
 )
 
 type Options struct {
@@ -19,7 +19,7 @@ type Options struct {
 
 	Log          string
 	LogSeverity  SeverityFlag
-	LogFormatter log.Formatter
+	LogFormatter logrus.Formatter
 
 	EtcdApiVersion int
 	EtcdNodes      listOptions
@@ -49,10 +49,14 @@ type Options struct {
 	// ProxyConnKeepAlive second
 	ProxyConnKeepAlive   time.Duration
 	ProxyIdleConnTimeout time.Duration
+
+	KafkaConfigPath string
+	KafkaAK         string
+	KafkaPassword   string
 }
 
 type SeverityFlag struct {
-	S log.Level
+	S logrus.Level
 }
 
 func (s *SeverityFlag) Get() interface{} {
@@ -60,7 +64,7 @@ func (s *SeverityFlag) Get() interface{} {
 }
 
 func (s *SeverityFlag) Set(value string) error {
-	sev, err := log.ParseLevel(strings.ToLower(value))
+	sev, err := logrus.ParseLevel(strings.ToLower(value))
 	if err != nil {
 		return err
 	}
@@ -108,9 +112,9 @@ func ParseCommandLine() (options Options, err error) {
 	flag.StringVar(&options.Interface, "interface", "", "Interface to bind to")
 	flag.StringVar(&options.ApiInterface, "apiInterface", "127.0.0.1", "Interface to for API to bind to")
 
-	flag.StringVar(&options.Log, "log", "console", "Logging to use (console, json, syslog or logstash)")
-	options.LogSeverity.S = log.WarnLevel
-	flag.Var(&options.LogSeverity, "logSeverity", "log at or above this level to the loggint output")
+	flag.StringVar(&options.Log, "log", "console", "Logging to use (console, json, redis, kafka, syslog or logstash)")
+	options.LogSeverity.S = logrus.WarnLevel
+	flag.Var(&options.LogSeverity, "logSeverity", "log at or above this level to the logging output")
 
 	// db
 	flag.StringVar(&options.DBHost, "dbHost", "127.0.0.1:3306", "db server")
@@ -137,6 +141,11 @@ func ParseCommandLine() (options Options, err error) {
 	flag.IntVar(&options.ProxyMaxIdleConnsPerHost, "proxyMaxIdleConnsPerHost", 1000, "proxy MaxIdleConnsPerHost")
 	flag.DurationVar(&options.ProxyConnKeepAlive, "proxyConnKeepAlive", 30*time.Second, "proxy Conn KeepAlive(second)")
 	flag.DurationVar(&options.ProxyIdleConnTimeout, "proxyIdleConnTimeout", 90*time.Second, "proxy IdleConnTimeout(second)")
+
+	// kafka
+	flag.StringVar(&options.KafkaConfigPath, "kafkaConfigPath", "mq.json", "kafka config path")
+	flag.StringVar(&options.KafkaAK, "kafkaAK", "", "kafka access key")
+	flag.StringVar(&options.KafkaPassword, "kafkaPassword", "", "kafka password")
 
 	flag.Parse()
 
