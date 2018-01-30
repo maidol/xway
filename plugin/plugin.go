@@ -119,7 +119,7 @@ func (r *Registry) GetMQProducer() *mq.MqProducer {
 	return r.mqProducer
 }
 
-func (r *Registry) Close() {
+func (r *Registry) Release() {
 	if r.redisPool != nil {
 		r.redisPool.Close()
 	}

@@ -371,7 +371,7 @@ func (s *Service) startGWServer() {
 func Run(registry *plugin.Registry) error {
 	defer func() {
 		// 启动发生错误, 或程序退出时的处理
-		registry.Close()
+		registry.Release()
 	}()
 
 	fmt.Println("[app running......]")
