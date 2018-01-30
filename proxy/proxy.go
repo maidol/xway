@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/vulcand/oxy/forward"
 	"github.com/vulcand/oxy/testutils"
 
@@ -22,7 +23,6 @@ import (
 	en "xway/engine"
 	xemun "xway/enum"
 	xerror "xway/error"
-	"xway/utils/mq"
 )
 
 var errLog = log.New(os.Stderr, "[MW:proxy]", 0)
@@ -159,12 +159,14 @@ func logProxyError(r *http.Request, err error) {
 
 	tk := "cw:gateway:err:" + xwayCtx.RequestId
 	msg := "[MW:proxy:logProxyError] " + err.Error()
-	l := xwayCtx.Registry.GetMQProducer()
-	l.SendMessageAsync(&mq.Message{
-		Topic:   "gateway-error",
-		Key:     tk,
-		Content: msg,
-	})
+	logrus.WithField("topic", "gateway-error").Error(tk, msg)
+
+	// l := xwayCtx.Registry.GetMQProducer()
+	// l.SendMessageAsync(&mq.Message{
+	// 	Topic:   "gateway-error",
+	// 	Key:     tk,
+	// 	Content: msg,
+	// })
 
 	// tk := "cw:gateway:err:" + strconv.FormatInt(time.Now().UnixNano(), 10)
 	// msg:="[MW:proxy:logProxyError] "+err.Error()

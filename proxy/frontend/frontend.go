@@ -2,7 +2,8 @@ package frontend
 
 import (
 	"net/http"
-	"xway/utils/mq"
+
+	"github.com/sirupsen/logrus"
 
 	"xway/context"
 	en "xway/engine"
@@ -60,12 +61,14 @@ func hasError(r *http.Request) bool {
 		if ok {
 			tk := "cw:gateway:err:" + xwayCtx.RequestId
 			msg := "[MW:frontend:hasError] " + e.Error()
-			l := xwayCtx.Registry.GetMQProducer()
-			l.SendMessageAsync(&mq.Message{
-				Topic:   "gateway-error",
-				Key:     tk,
-				Content: msg,
-			})
+			logrus.WithField("topic", "gateway-error").Error(tk, msg)
+
+			// l := xwayCtx.Registry.GetMQProducer()
+			// l.SendMessageAsync(&mq.Message{
+			// 	Topic:   "gateway-error",
+			// 	Key:     tk,
+			// 	Content: msg,
+			// })
 		}
 		return true
 	}

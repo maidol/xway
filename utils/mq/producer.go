@@ -21,7 +21,7 @@ type Message struct {
 }
 
 func NewProducer(cfg *MqConfig) *MqProducer {
-	fmt.Println("mqconfig: ", cfg)
+	fmt.Println("[mq config] ", cfg)
 	p := newSyncProducer(cfg)
 	ap := newAsyncProducer(cfg)
 	return &MqProducer{
@@ -93,10 +93,10 @@ func newAsyncProducer(cfg *MqConfig) sarama.AsyncProducer {
 	go func() {
 		for {
 			select {
-			// case <-producer.Successes():
-			case smsg := <-producer.Successes():
-				msg := fmt.Sprintf("Kafka async producer send msg success. topic: %v. key: %v. content: %v.", smsg.Topic, smsg.Key, smsg.Value)
-				fmt.Println(msg)
+			case <-producer.Successes():
+			// case smsg := <-producer.Successes():
+			// 	msg := fmt.Sprintf("Kafka async producer send msg success. topic: %v. key: %v. content: %v.", smsg.Topic, smsg.Key, smsg.Value)
+			// 	fmt.Println(msg)
 			case emsg := <-producer.Errors():
 				msg := fmt.Sprintf("Kafka async producer send message error. err: %v. topic: %v. key: %v. content: %v", emsg.Error(), emsg.Msg.Topic, emsg.Msg.Key, emsg.Msg.Value)
 				fmt.Println(msg)
