@@ -59,8 +59,8 @@ func (hook *Hook) Fire(entry *logrus.Entry) error {
 	}
 
 	if hook.injectHostname {
-		if _, ok := entry.Data["host"]; !ok {
-			entry.Data["host"] = hook.hostname
+		if _, ok := entry.Data["hostname"]; !ok {
+			entry.Data["hostname"] = hook.hostname
 		}
 	}
 
