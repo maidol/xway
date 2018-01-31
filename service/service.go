@@ -101,18 +101,36 @@ func (s *Service) initLogger() {
 		logrus.SetFormatter(&logrus.JSONFormatter{})
 		return
 	}
+	var err error
 	if s.options.Log == "logstash" {
-		logrus.SetOutput(os.Stdout)
-		logrus.SetFormatter(&logrus_logstash.LogstashFormatter{Fields: logrus.Fields{"type": "logs"}})
-		// TODO: add logstash hook
+		logrus.SetOutput(ioutil.Discard)
+		logrus.SetFormatter(&logrus.TextFormatter{DisableColors: true, DisableSorting: true, DisableTimestamp: true})
+		var hostname string
+		var e error
+		if hostname, e = os.Hostname(); e != nil {
+			hostname = "localhost"
+		}
+		fm := logrus_logstash.DefaultFormatter(logrus.Fields{"type": "gateway", "hostname": hostname})
+		// TODO: 建议: 考虑并发写conn的情况(conn.Write是阻塞的)
+		// 连接的使用优化成连接池+goroutine池并且以队列方式处理(队列中, 多个goroutine处理多个连接)
+		var conn net.Conn
+		// conn, err = net.Dial("udp", "192.168.2.155:64100")
+		conn, err = net.Dial("tcp", "192.168.2.155:64756")
+		if err != nil {
+			log.Fatal(err)
+		}
+		hook := logrus_logstash.New(conn, fm)
+		logrus.AddHook(hook)
+		// go已经对conn.Write做了线程同步的支持
+		logrus.StandardLogger().SetNoLock()
 		return
 	}
-	var err error
 	if s.options.Log == "redis" {
 		hid := strconv.FormatInt(time.Now().Unix(), 10)
 		levels := logrus.AllLevels
 		fm := &logrus.JSONFormatter{}
 		p := s.registry.GetRedisPool()
+		// TODO: 优化成以队列方式处理
 		var hook *redislogrus.Hook
 		hook, err = redislogrus.NewHook(hid, levels, fm, p, "gateway", true)
 		if err == nil {
@@ -135,6 +153,8 @@ func (s *Service) initLogger() {
 		levels := logrus.AllLevels
 		fm := &logrus.JSONFormatter{}
 		p := s.registry.GetMQProducer()
+		// TODO: 建议: 考虑并发写的情况
+		// 优化成连接池(多个MQProducer)+goroutine池并且以队列方式处理(队列中, 多个goroutine处理多个MQProducer)
 		var hook *kafkalogrus.Hook
 		hook, err = kafkalogrus.NewHook(hid, levels, fm, p, "gateway", true)
 		if !s.options.EnableMQ {
