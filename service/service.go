@@ -112,7 +112,7 @@ func (s *Service) initLogger() {
 		}
 		fm := logrus_logstash.DefaultFormatter(logrus.Fields{"type": "gateway", "hostname": hostname})
 		// TODO: 建议: 考虑并发写conn的情况(conn.Write是阻塞的)
-		// 连接的使用优化成连接池+goroutine池并且以队列方式处理(队列中, 多个goroutine处理多个连接)
+		// 连接的使用优化成连接池+goroutine池并且以队列方式异步处理(队列中, 多个goroutine处理多个连接)
 		var conn net.Conn
 		// conn, err = net.Dial("udp", "192.168.2.155:64100")
 		conn, err = net.Dial("tcp", "192.168.2.155:64756")
@@ -130,7 +130,7 @@ func (s *Service) initLogger() {
 		levels := logrus.AllLevels
 		fm := &logrus.JSONFormatter{}
 		p := s.registry.GetRedisPool()
-		// TODO: 优化成以队列方式处理
+		// TODO: 优化成以队列方式异步处理
 		var hook *redislogrus.Hook
 		hook, err = redislogrus.NewHook(hid, levels, fm, p, "gateway", true)
 		if err == nil {
@@ -154,7 +154,7 @@ func (s *Service) initLogger() {
 		fm := &logrus.JSONFormatter{}
 		p := s.registry.GetMQProducer()
 		// TODO: 建议: 考虑并发写的情况
-		// 优化成连接池(多个MQProducer)+goroutine池并且以队列方式处理(队列中, 多个goroutine处理多个MQProducer)
+		// 优化成连接池(多个MQProducer)+goroutine池并且以队列方式异步处理(队列中, 多个goroutine处理多个MQProducer)
 		var hook *kafkalogrus.Hook
 		hook, err = kafkalogrus.NewHook(hid, levels, fm, p, "gateway", true)
 		if !s.options.EnableMQ {
