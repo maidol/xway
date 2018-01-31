@@ -93,7 +93,7 @@ func (s *Service) initLogger() {
 	}
 	if s.options.Log == "console" {
 		logrus.SetOutput(os.Stdout)
-		logrus.SetFormatter(&logrus.TextFormatter{})
+		logrus.SetFormatter(&logrus.TextFormatter{FullTimestamp: true})
 		return
 	}
 	if s.options.Log == "json" {
@@ -172,7 +172,7 @@ func (s *Service) initLogger() {
 		}
 	}
 	logrus.SetOutput(os.Stdout)
-	logrus.SetFormatter(&logrus.TextFormatter{})
+	logrus.SetFormatter(&logrus.TextFormatter{FullTimestamp: true})
 	logrus.Errorf("[initLogger] Failed to initialized logger. Fallback to default: logger=%s, err=(%s)", s.options.Log, err)
 }
 
