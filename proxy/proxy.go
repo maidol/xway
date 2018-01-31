@@ -78,11 +78,13 @@ func NewDo(tr *http.Transport) (http.HandlerFunc, error) {
 			case *url.Error:
 				if ue.Timeout() {
 					// client.Do请求超时
-					ue.Err = errors.New("request was timeout: " + ue.Err.Error())
+					msg := fmt.Sprintf("request was timeout(%s): %s", reqTimeout, ue.Err.Error())
+					ue.Err = errors.New(msg)
 					break
 				}
 				if ue.Err == context.Canceled {
-					ue.Err = errors.New("request was canceled: " + ue.Err.Error())
+					msg := fmt.Sprintf("request was canceled: %s", ue.Err.Error())
+					ue.Err = errors.New(msg)
 					break
 				}
 			// case *url.EscapeError:
@@ -159,7 +161,7 @@ func logProxyError(r *http.Request, err error) {
 
 	tk := "cw:gateway:err:" + xwayCtx.RequestId
 	msg := "[MW:proxy:logProxyError] " + err.Error()
-	logrus.WithField("topic", "gateway-error").Error(tk, msg)
+	logrus.WithFields(logrus.Fields{"topic": "gateway-error", "key": tk}).Error(msg)
 
 	// l := xwayCtx.Registry.GetMQProducer()
 	// l.SendMessageAsync(&mq.Message{

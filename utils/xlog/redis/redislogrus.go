@@ -1,12 +1,13 @@
-package kafkalogrus
+package redislogrus
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"strconv"
 	"time"
-	"xway/utils/mq"
 
+	"github.com/garyburd/redigo/redis"
 	"github.com/sirupsen/logrus"
 )
 
@@ -17,10 +18,10 @@ type Hook struct {
 	hostname       string
 	levels         []logrus.Level
 	formatter      logrus.Formatter
-	producer       *mq.MqProducer
+	producer       *redis.Pool
 }
 
-func NewHook(id string, levels []logrus.Level, formatter logrus.Formatter, producer *mq.MqProducer, defaultTopic string, injectHostname bool) (*Hook, error) {
+func NewHook(id string, levels []logrus.Level, formatter logrus.Formatter, producer *redis.Pool, defaultTopic string, injectHostname bool) (*Hook, error) {
 	var err error
 	var hostname string
 	if hostname, err = os.Hostname(); err != nil {
@@ -93,10 +94,11 @@ func (hook *Hook) Fire(entry *logrus.Entry) error {
 	// value:=sarama.ByteEncoder(b)
 	value := string(b)
 
-	hook.producer.SendMessageAsync(&mq.Message{
-		Topic:   topic,
-		Key:     key,
-		Content: value,
-	})
+	rdc := hook.producer.Get()
+	defer rdc.Close()
+	_, re := rdc.Do("SET", key, value)
+	if re != nil {
+		fmt.Println("[redislogrus.Hook] redis rdc.Do(SET) err: ", re)
+	}
 	return nil
 }

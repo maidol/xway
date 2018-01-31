@@ -61,7 +61,7 @@ func hasError(r *http.Request) bool {
 		if ok {
 			tk := "cw:gateway:err:" + xwayCtx.RequestId
 			msg := "[MW:frontend:hasError] " + e.Error()
-			logrus.WithField("topic", "gateway-error").Error(tk, msg)
+			logrus.WithFields(logrus.Fields{"topic": "gateway-error", "key": tk}).Error(msg)
 
 			// l := xwayCtx.Registry.GetMQProducer()
 			// l.SendMessageAsync(&mq.Message{

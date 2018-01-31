@@ -8,7 +8,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"runtime"
 	"strconv"
 	"sync"
 	"time"
@@ -30,6 +29,7 @@ import (
 	"xway/utils/mysql"
 	"xway/utils/redis"
 	"xway/utils/xlog/kafka"
+	"xway/utils/xlog/redis"
 )
 
 const (
@@ -104,37 +104,51 @@ func (s *Service) initLogger() {
 	if s.options.Log == "logstash" {
 		logrus.SetOutput(os.Stdout)
 		logrus.SetFormatter(&logrus_logstash.LogstashFormatter{Fields: logrus.Fields{"type": "logs"}})
-		return
-	}
-	if s.options.Log == "redis" {
+		// TODO: add logstash hook
 		return
 	}
 	var err error
-	if s.options.Log == "kafka" {
-		path := "/dev/null" // suport linux
-		if runtime.GOOS == "windows" {
-			path = "NUL" // suport windows
-		}
-		var devNull *os.File
-		devNull, err = os.OpenFile(path, os.O_WRONLY, 0)
+	if s.options.Log == "redis" {
+		hid := strconv.FormatInt(time.Now().Unix(), 10)
+		levels := logrus.AllLevels
+		fm := &logrus.JSONFormatter{}
+		p := s.registry.GetRedisPool()
+		var hook *redislogrus.Hook
+		hook, err = redislogrus.NewHook(hid, levels, fm, p, "gateway", true)
 		if err == nil {
-			hid := strconv.FormatInt(time.Now().Unix(), 10)
-			levels := []logrus.Level{logrus.InfoLevel, logrus.ErrorLevel}
-			fm := &logrus.JSONFormatter{}
-			p := s.registry.GetMQProducer()
-			var hook *kafkalogrus.KafkaLogrusHook
-			hook, err = kafkalogrus.NewKafkaLogrusHook(hid, levels, fm, p, "gateway", true)
-			if err == nil {
-				logrus.SetOutput(devNull)
-				logrus.SetFormatter(&logrus.TextFormatter{DisableColors: true})
-				logrus.AddHook(hook)
-				return
-			}
+			logrus.SetOutput(ioutil.Discard)
+			logrus.SetFormatter(&logrus.TextFormatter{DisableColors: true, DisableSorting: true, DisableTimestamp: true})
+			logrus.AddHook(hook)
+			logrus.StandardLogger().SetNoLock()
+			return
+		}
+	}
+	if s.options.Log == "kafka" {
+		// path := "/dev/null" // suport linux
+		// if runtime.GOOS == "windows" {
+		// 	path = "NUL" // suport windows
+		// }
+		// var devNull *os.File
+		// devNull, err = os.OpenFile(path, os.O_WRONLY, 0)
+		// if err == nil {}
+		hid := strconv.FormatInt(time.Now().Unix(), 10)
+		levels := logrus.AllLevels
+		fm := &logrus.JSONFormatter{}
+		p := s.registry.GetMQProducer()
+		var hook *kafkalogrus.Hook
+		hook, err = kafkalogrus.NewHook(hid, levels, fm, p, "gateway", true)
+		if err == nil {
+			// logrus.SetOutput(devNull)
+			logrus.SetOutput(ioutil.Discard)
+			logrus.SetFormatter(&logrus.TextFormatter{DisableColors: true, DisableSorting: true, DisableTimestamp: true})
+			logrus.AddHook(hook)
+			logrus.StandardLogger().SetNoLock()
+			return
 		}
 	}
 	logrus.SetOutput(os.Stdout)
 	logrus.SetFormatter(&logrus.TextFormatter{})
-	logrus.Warnf("Failed to initialized logger. Fallback to default: logger=%s, err=(%s)", s.options.Log, err)
+	logrus.Errorf("[initLogger] Failed to initialized logger. Fallback to default: logger=%s, err=(%s)", s.options.Log, err)
 }
 
 func (s *Service) initDB() error {

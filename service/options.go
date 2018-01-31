@@ -113,8 +113,8 @@ func ParseCommandLine() (options Options, err error) {
 	flag.StringVar(&options.ApiInterface, "apiInterface", "127.0.0.1", "Interface to for API to bind to")
 
 	flag.StringVar(&options.Log, "log", "console", "Logging to use (console, json, redis, kafka, syslog or logstash)")
-	options.LogSeverity.S = logrus.WarnLevel
-	flag.Var(&options.LogSeverity, "logSeverity", "log at or above this level to the logging output")
+	options.LogSeverity.S = logrus.ErrorLevel // default
+	flag.Var(&options.LogSeverity, "logSeverity", "log at or above(debug,info,warn,error,fatal,panic) this level to the logging output(default >=error)")
 
 	// db
 	flag.StringVar(&options.DBHost, "dbHost", "127.0.0.1:3306", "db server")

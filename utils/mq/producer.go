@@ -32,6 +32,7 @@ func NewProducer(cfg *MqConfig) *MqProducer {
 
 func newConfig(cfg *MqConfig) *sarama.Config {
 	mqConfig := sarama.NewConfig()
+	mqConfig.ChannelBufferSize = 1024
 	mqConfig.Net.SASL.Enable = true
 	mqConfig.Net.SASL.User = cfg.Ak
 	mqConfig.Net.SASL.Password = cfg.Password
@@ -130,7 +131,5 @@ func (mqp *MqProducer) SendMessageAsync(m *Message) {
 		Key:   sarama.StringEncoder(m.Key),
 		Value: sarama.StringEncoder(m.Content),
 	}
-
-	input := mqp.asyncProducer.Input()
-	input <- msg
+	mqp.asyncProducer.Input() <- msg
 }
