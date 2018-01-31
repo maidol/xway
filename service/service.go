@@ -137,6 +137,9 @@ func (s *Service) initLogger() {
 		p := s.registry.GetMQProducer()
 		var hook *kafkalogrus.Hook
 		hook, err = kafkalogrus.NewHook(hid, levels, fm, p, "gateway", true)
+		if !s.options.EnableMQ {
+			err = errors.New("mq was disabled")
+		}
 		if err == nil {
 			// logrus.SetOutput(devNull)
 			logrus.SetOutput(ioutil.Discard)
@@ -342,10 +345,12 @@ func (s *Service) load() error {
 	}
 	fmt.Println("[initDB success]")
 
-	if err := s.initMQ(); err != nil {
-		return fmt.Errorf("initMQ failure: %v", err)
+	if s.options.EnableMQ {
+		if err := s.initMQ(); err != nil {
+			return fmt.Errorf("initMQ failure: %v", err)
+		}
+		fmt.Println("[initMQ success]")
 	}
-	fmt.Println("[initMQ success]")
 
 	if err := s.initEngine(); err != nil {
 		return fmt.Errorf("initEngine failure: %v", err)

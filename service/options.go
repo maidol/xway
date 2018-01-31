@@ -50,6 +50,7 @@ type Options struct {
 	ProxyConnKeepAlive   time.Duration
 	ProxyIdleConnTimeout time.Duration
 
+	EnableMQ        bool
 	KafkaConfigPath string
 	KafkaAK         string
 	KafkaPassword   string
@@ -142,6 +143,7 @@ func ParseCommandLine() (options Options, err error) {
 	flag.DurationVar(&options.ProxyConnKeepAlive, "proxyConnKeepAlive", 30*time.Second, "proxy Conn KeepAlive(second)")
 	flag.DurationVar(&options.ProxyIdleConnTimeout, "proxyIdleConnTimeout", 90*time.Second, "proxy IdleConnTimeout(second)")
 
+	flag.BoolVar(&options.EnableMQ, "enablemq", false, "enable mq")
 	// kafka
 	flag.StringVar(&options.KafkaConfigPath, "kafkaConfigPath", "mq.json", "kafka config path")
 	flag.StringVar(&options.KafkaAK, "kafkaAK", "", "kafka access key")
