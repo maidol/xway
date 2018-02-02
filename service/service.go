@@ -154,6 +154,7 @@ func (s *Service) initLogger() {
 		hid := strconv.FormatInt(time.Now().Unix(), 10)
 		levels := logrus.AllLevels
 		// fm := &logrus.JSONFormatter{}
+		// timestampformat RFC3339="2006-01-02T15:04:05Z07:00"
 		fm := logrus_logstash.DefaultFormatter(logrus.Fields{"type": "gateway", "hostname": hostname, "logproject": "epaper", "logstore": "gateway"})
 		p := s.registry.GetMQProducer()
 		// TODO: 建议: 考虑并发写的情况
