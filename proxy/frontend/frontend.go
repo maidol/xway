@@ -1,6 +1,7 @@
 package frontend
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/sirupsen/logrus"
@@ -60,7 +61,7 @@ func hasError(r *http.Request) bool {
 		e, ok := err.(error)
 		if ok {
 			tk := "cw:gateway:err:" + xwayCtx.RequestId
-			msg := "[MW:frontend:hasError] " + e.Error()
+			msg := fmt.Sprintf("[MW:frontend:hasError] %v: %v", r.URL, e.Error())
 			logrus.WithFields(logrus.Fields{"topic": "gateway-error", "key": tk}).Error(msg)
 		}
 		return true

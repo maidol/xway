@@ -174,7 +174,7 @@ func (s *Service) initLogger() {
 	}
 	logrus.SetOutput(os.Stdout)
 	logrus.SetFormatter(&logrus.TextFormatter{FullTimestamp: true})
-	logrus.Errorf("[initLogger] Failed to initialized logger. Fallback to default: logger=%s, err=(%s)", s.options.Log, err)
+	logrus.Errorf("[initLogger] Failed to initialized logger. Fallback to default: logger=%s, err=(%v)", s.options.Log, err)
 }
 
 func (s *Service) initDB() error {
