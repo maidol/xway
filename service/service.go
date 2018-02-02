@@ -101,6 +101,7 @@ func (s *Service) initLogger() {
 		logrus.SetFormatter(&logrus.JSONFormatter{})
 		return
 	}
+	// TODO: 容错: 连接断开重连的问题, 日志发送失败重试, 日志临时保存在内存或本地文件, 日志服务恢复时需重发......
 	var err error
 	var hostname string
 	var e error

@@ -4,12 +4,11 @@ import (
 	"github.com/ivpusic/grpool"
 )
 
-var xpool = grpool.NewPool(100000, 3000000)
-
 func Default() *grpool.Pool {
-	if xpool != nil {
-		return xpool
-	}
-	xpool := grpool.NewPool(100000, 3000000)
+	xpool := grpool.NewPool(10, 100)
 	return xpool
+}
+
+func New(numWorkers int, jobQueueLen int) *grpool.Pool {
+	return grpool.NewPool(numWorkers, jobQueueLen)
 }

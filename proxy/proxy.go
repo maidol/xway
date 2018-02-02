@@ -2,7 +2,6 @@ package proxy
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -78,13 +77,11 @@ func NewDo(tr *http.Transport) (http.HandlerFunc, error) {
 			case *url.Error:
 				if ue.Timeout() {
 					// client.Do请求超时
-					msg := fmt.Sprintf("request was timeout(%s): %s", reqTimeout, ue.Err.Error())
-					ue.Err = errors.New(msg)
+					ue.Err = fmt.Errorf("request was timeout(%s): %s", reqTimeout, ue.Err.Error())
 					break
 				}
 				if ue.Err == context.Canceled {
-					msg := fmt.Sprintf("request was canceled: %s", ue.Err.Error())
-					ue.Err = errors.New(msg)
+					ue.Err = fmt.Errorf("request was canceled: %s", ue.Err.Error())
 					break
 				}
 			// case *url.EscapeError:
@@ -95,10 +92,11 @@ func NewDo(tr *http.Transport) (http.HandlerFunc, error) {
 			var respmsg string
 			if resp != nil {
 				d, _ = ioutil.ReadAll(resp.Body)
-				respmsg = fmt.Sprintf("[resp状态码]:%v, resp.body:%s", u, resp.StatusCode, d)
+				respmsg = fmt.Sprintf("[resp状态码]:%d, resp.body:%s", resp.StatusCode, d)
 			}
 			// fmt.Printf("[MW:proxy] client.Do err: %v\n", err)
-			cause := fmt.Sprintf("url forward to %v, client.Do err: %v", u, err.Error()+respmsg)
+			msg := fmt.Sprintf("client.Do err: %v", err.Error()+respmsg)
+			cause := formatRequestCause(u, msg)
 			e := xerror.NewRequestError(xemun.RetProxyError, xemun.ECodeProxyFailed, cause)
 			e.Write(w)
 			logProxyError(outReq, e)
@@ -109,7 +107,8 @@ func NewDo(tr *http.Transport) (http.HandlerFunc, error) {
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			// fmt.Printf("[MW:proxy] ioutil.ReadAll err: %v\n", err)
-			cause := fmt.Sprintf("url forward to %v, ioutil.ReadAll err: %v", u, err.Error())
+			msg := fmt.Sprintf("ioutil.ReadAll(resp.Body) err: %v", err.Error())
+			cause := formatRequestCause(u, msg)
 			e := xerror.NewRequestError(xemun.RetProxyError, xemun.ECodeInternal, cause)
 			e.Write(w)
 			logProxyError(outReq, e)
@@ -121,7 +120,8 @@ func NewDo(tr *http.Transport) (http.HandlerFunc, error) {
 		b, rexerr := regexp.MatchString("^[2|3]", strconv.Itoa(statusCode))
 		if rexerr != nil {
 			// fmt.Printf("[MW:proxy] regexp.MatchString err: %v\n", rexerr)
-			cause := fmt.Sprintf("url forward to %v, regexp.MatchString err: %v", u, err.Error())
+			msg := fmt.Sprintf("resp.StatusCode regexp.MatchString(\"^[2|3]\", %v) err: %v", statusCode, err.Error())
+			cause := formatRequestCause(u, msg)
 			e := xerror.NewRequestError(xemun.RetProxyError, xemun.ECodeProxyFailed, cause)
 			e.Write(w)
 			logProxyError(outReq, e)
@@ -129,7 +129,8 @@ func NewDo(tr *http.Transport) (http.HandlerFunc, error) {
 		}
 		if !b {
 			// 处理4xx, 5xx ...
-			cause := fmt.Sprintf("url forward to %v, %v", u, fmt.Sprintf("源服务器错误,[状态码]:%v, body:%s", statusCode, body))
+			msg := fmt.Sprintf("源服务器错误,[状态码]:%v, body:%s", statusCode, body)
+			cause := formatRequestCause(u, msg)
 			e := xerror.NewRequestError(xemun.RetProxyError, xemun.ECodeProxyFailed, cause)
 			e.Write(w)
 			logProxyError(outReq, e)
@@ -156,29 +157,16 @@ func sendResponse(w http.ResponseWriter, header http.Header, statusCode int, bod
 	w.Write(body)
 }
 
+func formatRequestCause(url *url.URL, cause string) string {
+	return fmt.Sprintf("url forward to %v: %v", url, cause)
+}
+
 func logProxyError(r *http.Request, err error) {
 	xwayCtx := xwaycontext.DefaultXWayContext(r.Context())
 
 	tk := "cw:gateway:err:" + xwayCtx.RequestId
 	msg := "[MW:proxy:logProxyError] " + err.Error()
 	logrus.WithFields(logrus.Fields{"topic": "gateway-error", "key": tk}).Error(msg)
-
-	// l := xwayCtx.Registry.GetMQProducer()
-	// l.SendMessageAsync(&mq.Message{
-	// 	Topic:   "gateway-error",
-	// 	Key:     tk,
-	// 	Content: msg,
-	// })
-
-	// tk := "cw:gateway:err:" + strconv.FormatInt(time.Now().UnixNano(), 10)
-	// msg:="[MW:proxy:logProxyError] "+err.Error()
-	// l := xwayCtx.Registry.GetRedisPool().Get()
-	// defer l.Close()
-	// _, re := l.Do("SET", tk, msg)
-	// if re != nil {
-	// 	// TODO: 所有的日志不要直接输出到stdout/stderr(其是同步阻塞操作), 而选择输出到文件(最好选择ssd)或管道方式或网络流(最好)
-	// 	fmt.Println("[MW:proxy:logProxyError] redis l.Do(SET) err:", re)
-	// }
 
 	// // TODO: 优化日志记录, 精简请求头和body数据
 	// errLog.Printf("======http proxy occur err: begin======\n")
