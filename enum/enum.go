@@ -50,10 +50,11 @@ const (
 	// CodeSuccessed 成功
 	CodeSuccessed = 0
 	// CodeRouteNotFound 未匹配代理路由
-	ECodeRouteNotFound     = 100
-	ECodeNotFile           = 101
-	ECodeDirNotEmpty       = 102
-	ECodeUnauthorized      = 103
+	ECodeRouteNotFound = 100
+	ECodeNotFile       = 101
+	ECodeDirNotEmpty   = 102
+	// ECodeUnauthorized      = 103
+	ECodeUnauthorized      = 17
 	ECodeTestFailed        = 104
 	ECodeProxyFailed       = 105
 	ECodeInternal          = 106
