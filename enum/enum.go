@@ -23,11 +23,12 @@ var CodeMsg = map[int]string{
 
 // CodeStatus ...
 var CodeStatus = map[int]int{
-	CodeSuccessed:          http.StatusOK,
-	ECodeRouteNotFound:     http.StatusNotFound,
-	ECodeNotFile:           http.StatusForbidden,
-	ECodeDirNotEmpty:       http.StatusForbidden,
-	ECodeUnauthorized:      http.StatusUnauthorized,
+	CodeSuccessed:      http.StatusOK,
+	ECodeRouteNotFound: http.StatusNotFound,
+	ECodeNotFile:       http.StatusForbidden,
+	ECodeDirNotEmpty:   http.StatusForbidden,
+	// ECodeUnauthorized:      http.StatusUnauthorized,
+	ECodeUnauthorized:      http.StatusOK,
 	ECodeTestFailed:        http.StatusPreconditionFailed,
 	ECodeProxyFailed:       http.StatusBadGateway,
 	ECodeInternal:          http.StatusInternalServerError,
