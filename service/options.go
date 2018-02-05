@@ -54,6 +54,8 @@ type Options struct {
 	KafkaConfigPath string
 	KafkaAK         string
 	KafkaPassword   string
+
+	Topic string
 }
 
 type SeverityFlag struct {
@@ -148,6 +150,8 @@ func ParseCommandLine() (options Options, err error) {
 	flag.StringVar(&options.KafkaConfigPath, "kafkaConfigPath", "mq.json", "kafka config path")
 	flag.StringVar(&options.KafkaAK, "kafkaAK", "", "kafka access key")
 	flag.StringVar(&options.KafkaPassword, "kafkaPassword", "", "kafka password")
+
+	flag.StringVar(&options.Topic, "topic", "xway", "log topic")
 
 	flag.Parse()
 

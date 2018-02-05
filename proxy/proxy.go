@@ -166,7 +166,8 @@ func logProxyError(r *http.Request, err error) {
 
 	tk := "cw:gateway:err:" + xwayCtx.RequestId
 	msg := "[MW:proxy:logProxyError] " + err.Error()
-	logrus.WithFields(logrus.Fields{"topic": "gateway-error", "key": tk}).Error(msg)
+	logrus.WithFields(logrus.Fields{"key": tk}).Error(msg)
+	// logrus.WithFields(logrus.Fields{"topic": "gateway-error", "key": tk}).Error(msg)
 
 	// // TODO: 优化日志记录, 精简请求头和body数据
 	// errLog.Printf("======http proxy occur err: begin======\n")

@@ -1,8 +1,6 @@
 {
-  "topics": ["gateway-error"],
-  "servers": ["kafka-ons-internet.aliyun.com:8080"],
+  "servers": ["kafka-cn-beijing.aliyun.com:8080"],
   "ak": "xxx",
   "password": "xxx",
-  "consumerId": "CID_gateway_error_001",
   "cert_file": "mq-ca-cert"
 }

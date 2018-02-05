@@ -62,7 +62,7 @@ func hasError(r *http.Request) bool {
 		if ok {
 			tk := "cw:gateway:err:" + xwayCtx.RequestId
 			msg := fmt.Sprintf("[MW:frontend:hasError] %v: %v", r.URL, e.Error())
-			logrus.WithFields(logrus.Fields{"topic": "gateway-error", "key": tk}).Error(msg)
+			logrus.WithFields(logrus.Fields{"key": tk}).Error(msg)
 		}
 		return true
 	}

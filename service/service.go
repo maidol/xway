@@ -134,7 +134,7 @@ func (s *Service) initLogger() {
 		p := s.registry.GetRedisPool()
 		// TODO: 优化成以队列方式异步处理
 		var hook *redislogrus.Hook
-		hook, err = redislogrus.NewHook(hid, levels, fm, p, "gateway", true)
+		hook, err = redislogrus.NewHook(hid, levels, fm, p, s.options.Topic, true)
 		if err == nil {
 			logrus.SetOutput(ioutil.Discard)
 			logrus.SetFormatter(&logrus.TextFormatter{DisableColors: true, DisableSorting: true, DisableTimestamp: true})
@@ -160,7 +160,7 @@ func (s *Service) initLogger() {
 		// TODO: 建议: 考虑并发写的情况
 		// 优化成连接池(多个MQProducer)+goroutine池并且以队列方式异步处理(队列中, 多个goroutine处理多个MQProducer)
 		var hook *kafkalogrus.Hook
-		hook, err = kafkalogrus.NewHook(hid, levels, fm, p, "gateway", true)
+		hook, err = kafkalogrus.NewHook(hid, levels, fm, p, s.options.Topic, true)
 		if !s.options.EnableMQ {
 			err = errors.New("mq was disabled")
 		}
