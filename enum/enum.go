@@ -23,6 +23,18 @@ var CodeMsg = map[int]string{
 
 // CodeStatus ...
 var CodeStatus = map[int]int{
+	// CodeSuccessed:          http.StatusOK,
+	// ECodeRouteNotFound:     http.StatusNotFound,
+	// ECodeNotFile:           http.StatusForbidden,
+	// ECodeDirNotEmpty:       http.StatusForbidden,
+	// ECodeUnauthorized:      http.StatusUnauthorized,
+	// ECodeTestFailed:        http.StatusPreconditionFailed,
+	// ECodeProxyFailed:       http.StatusBadGateway,
+	// ECodeInternal:          http.StatusInternalServerError,
+	// ECodeParamsError:       http.StatusBadRequest,
+	// ECodeHmacsha1SignError: http.StatusUnauthorized,
+	// ECodeClientException:   http.StatusBadRequest,
+
 	CodeSuccessed:      http.StatusOK,
 	ECodeRouteNotFound: http.StatusNotFound,
 	ECodeNotFile:       http.StatusForbidden,
@@ -32,9 +44,9 @@ var CodeStatus = map[int]int{
 	ECodeTestFailed:        http.StatusPreconditionFailed,
 	ECodeProxyFailed:       http.StatusBadGateway,
 	ECodeInternal:          http.StatusInternalServerError,
-	ECodeParamsError:       http.StatusBadRequest,
-	ECodeHmacsha1SignError: http.StatusUnauthorized,
-	ECodeClientException:   http.StatusBadRequest,
+	ECodeParamsError:       http.StatusOK,
+	ECodeHmacsha1SignError: http.StatusOK,
+	ECodeClientException:   http.StatusOK,
 }
 
 const (
