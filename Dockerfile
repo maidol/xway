@@ -1,6 +1,9 @@
 # FROM scratch
 # ADD ca-certificates.crt /etc/ssl/certs/  # when use https, resolve Go’s x509 error
 FROM alpine:latest
+# Install base packages, set timezone
+RUN apk update && apk add curl bash tree tzdata
+ENV TZ Asia/Shanghai
 ADD app /
 ADD conf /conf
 EXPOSE 9799
