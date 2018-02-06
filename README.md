@@ -33,7 +33,7 @@ docker run --rm -v "$PWD":/go/src/xway -e CGO_ENABLED=0 -e GOOS=linux -w /go/src
 ```bash
 GOMAXPROCS=2 app -etcd xxx:2379 -dbHost xxx:3306 -dbUserName xxx -dbPassword xxx -redisHost xxx:6379 -redisPassword xxx -logSeverity info -log redis
 
-GOMAXPROCS=16 ./app -etcd xxx:2379 -dbHost xxx:3306 -dbUserName xxx -dbPassword xxx -redisHost xxx:6379 -redisPassword xxx -apiInterface 0.0.0.0 -dbMaxIdle 2000 -dbMaxOpen 2000 -redisMaxIdle 2000 -redisMaxActive 2000 --redisWait=true -proxyMaxIdleConnsPerHost 1500 -dbConnMaxLifetime 60s -kafkaAK xxx -kafkaPassword xxx -kafkaConfigPath mq.test.json -enablemq -logSeverity info -log kafka
+GOMAXPROCS=16 ./app -etcd xxx:2379 -dbHost xxx:3306 -dbUserName xxx -dbPassword xxx -redisHost xxx:6379 -redisPassword xxx -apiInterface 0.0.0.0 -dbMaxIdle 2000 -dbMaxOpen 2000 -redisMaxIdle 2000 -redisMaxActive 2000 --redisWait=true -proxyMaxIdleConnsPerHost 1500 -dbConnMaxLifetime 60s -kafkaAK xxx -kafkaPassword xxx -kafkaConfigPath mq.test.json -enablemq -logSeverity info -log kafka -topic testxway
 ```
 
 ## etcdctl
