@@ -6,7 +6,7 @@ import "net/http"
 var RetMsg = map[int]string{
 	RetNormal:     "正常",
 	RetAbnormal:   "异常",
-	RetOauthError: "token相关错误",
+	RetOauthError: "授权认证相关错误",
 	RetProxyError: "代理相关异常",
 }
 
@@ -58,7 +58,7 @@ const (
 	// RetAbnormal 不正常返回
 	RetAbnormal = 1
 
-	// RetOauthError token授权认证失败
+	// RetOauthError 授权认证失败
 	RetOauthError = 3
 
 	// RetProxyError 代理相关错误

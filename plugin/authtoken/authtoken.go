@@ -266,7 +266,7 @@ func (at *AuthToken) clientCredentials(rw http.ResponseWriter, r *http.Request, 
 	// TODO: 比较签名, clientId, timeLine, sign, path, query
 	text := generateOriginalText4Sign(hd, r)
 	if s, b := checkHamcSign(text, hd.Sign, app.PrivateKey); !b {
-		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeHmacsha1SignError, "sign签名不匹配: "+hd.Sign+", 正确签名: "+s+", 原始值: "+text)
+		e := xerror.NewRequestError(enum.RetOauthError, enum.ECodeHmacsha1SignError, "sign签名不匹配: "+hd.Sign+", 正确签名: "+s+", 原始值: "+text)
 		at.RequestError(rw, r, e)
 		return
 	}
