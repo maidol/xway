@@ -216,7 +216,7 @@ func (at *AuthToken) accessToken(rw http.ResponseWriter, r *http.Request, next h
 	}
 	// 验证token
 	if m == nil || len(m) == 0 {
-		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeUnauthorized, "未找到有效token")
+		e := xerror.NewRequestError(enum.RetOauthError, enum.ECodeUnauthorized, "未找到有效token")
 		at.RequestError(rw, r, e)
 		return
 	}
@@ -232,7 +232,7 @@ func (at *AuthToken) accessToken(rw http.ResponseWriter, r *http.Request, next h
 		return
 	}
 	if int64(expireDate) < time.Now().Unix() {
-		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeUnauthorized, "token已过期")
+		e := xerror.NewRequestError(enum.RetOauthError, enum.ECodeAccessTokenTimeOut, "token已过期")
 		at.RequestError(rw, r, e)
 		return
 	}
