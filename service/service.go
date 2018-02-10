@@ -322,7 +322,7 @@ func (s *Service) initProxy() error {
 		// Proxy: http.ProxyFromEnvironment,
 		DialContext: (&net.Dialer{
 			Timeout:   30 * time.Second,
-			KeepAlive: s.options.ProxyConnKeepAlive,
+			KeepAlive: s.options.ProxyConnKeepAlive, // tcp keepalive
 			DualStack: true,
 		}).DialContext,
 		// ResponseHeaderTimeout: 60 * time.Second,
@@ -330,7 +330,7 @@ func (s *Service) initProxy() error {
 		ExpectContinueTimeout: 1 * time.Second,
 		MaxIdleConns:          s.options.ProxyMaxIdleConns, // Zero means no limit.
 		MaxIdleConnsPerHost:   s.options.ProxyMaxIdleConnsPerHost,
-		IdleConnTimeout:       s.options.ProxyIdleConnTimeout,
+		IdleConnTimeout:       s.options.ProxyIdleConnTimeout, // http keepalive
 	}
 	s.registry.SetTransport(tr)
 	p, err := proxy.NewDo(tr)

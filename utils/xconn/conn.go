@@ -1,6 +1,7 @@
 package xconn
 
 import (
+	"fmt"
 	"net"
 )
 
@@ -22,6 +23,12 @@ func (xc *Tcp) Write(p []byte) (int, error) {
 	var err error
 	n, err = xc.Conn.Write(p)
 	if err != nil {
+		// TODO: 判断err错误类型, 进行处理
+
+		e := xc.Conn.Close()
+		if e != nil {
+			fmt.Println(e)
+		}
 		// 尝试重连
 		var conn net.Conn
 		conn, err = net.Dial("tcp", xc.Addr)
