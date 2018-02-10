@@ -28,6 +28,7 @@ import (
 	"xway/utils/mq"
 	"xway/utils/mysql"
 	"xway/utils/redis"
+	"xway/utils/xconn"
 	"xway/utils/xlog/kafka"
 	"xway/utils/xlog/redis"
 )
@@ -115,9 +116,11 @@ func (s *Service) initLogger() {
 		// TODO: 建议: 考虑并发写conn的情况(conn.Write是阻塞的)
 		// 处理网络断开重连
 		// 连接的使用优化成连接池+goroutine池并且以队列方式异步处理(队列中, 多个goroutine处理多个连接)
-		var conn net.Conn
+		// var conn net.Conn
 		// conn, err = net.Dial("udp", "192.168.2.155:64100")
-		conn, err = net.Dial("tcp", "192.168.2.155:64756")
+		var conn *xconn.Tcp
+		conn, err = xconn.NewTcp("192.168.2.155:64756")
+
 		if err != nil {
 			log.Fatal(err)
 		}

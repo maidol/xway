@@ -33,13 +33,15 @@ func NewProducer(cfg *MqConfig) *MqProducer {
 func newConfig(cfg *MqConfig) *sarama.Config {
 	mqConfig := sarama.NewConfig()
 	mqConfig.ChannelBufferSize = 1024
+	// TODO: 优化net配置
 	mqConfig.Net.MaxOpenRequests = 10
 	mqConfig.Net.SASL.Enable = true
 	mqConfig.Net.SASL.User = cfg.Ak
 	mqConfig.Net.SASL.Password = cfg.Password
 	mqConfig.Net.SASL.Handshake = true
+	// mqConfig.Net.KeepAlive = 10 * time.Second // tcp KeepAlive可理解成在tcp连接发送检测心跳包之前的空闲时间, 0则默认使用系统内核设置的时间(linux默认2小时后发送心跳包), 在多次发送心跳包, 远端都没有回复, 系统会关闭此连接, 否则重新计算空闲时间; KeepAlive设置越小, 则检测越频繁; tcp KeepAlive与http KeepAlive是两回事
 
-	// TODO: 优化发送策略, 提高吞吐量, 批量发送,  mqConfig.Producer.Flush
+	// TODO: 优化发送策略, 提高吞吐量, 批量发送, mqConfig.Producer.Flush
 	// mqConfig.Producer.Flush.Messages = 10
 
 	certBytes, err := ioutil.ReadFile(GetFullPath(cfg.CertFile))
