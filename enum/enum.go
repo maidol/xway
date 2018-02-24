@@ -13,7 +13,7 @@ var RetMsg = map[int]string{
 // CodeMsg ...
 var CodeMsg = map[int]string{
 	CodeSuccessed:            "Success",
-	ECodeRouteNotFound:       "未能成功匹配代理路由",
+	ECodeRouteNotFound:       "未能成功匹配路由",
 	ECodeProxyFailed:         "服务器错误",
 	ECodeUnauthorized:        "未认证的请求",
 	ECodeOriginalServerError: "源服务器请求异常",
@@ -69,7 +69,7 @@ const (
 const (
 	// CodeSuccessed 成功
 	CodeSuccessed = 0
-	// CodeRouteNotFound 未匹配代理路由
+	// CodeRouteNotFound 未匹配路由
 	ECodeRouteNotFound = 100
 	ECodeNotFile       = 101
 	ECodeDirNotEmpty   = 102
