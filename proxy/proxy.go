@@ -131,7 +131,8 @@ func NewDo(tr *http.Transport) (http.HandlerFunc, error) {
 			// 处理4xx, 5xx ...
 			msg := fmt.Sprintf("源服务器错误,[状态码]:%v, body:%s", statusCode, body)
 			cause := formatRequestCause(u, msg)
-			e := xerror.NewRequestError(xemun.RetProxyError, xemun.ECodeProxyFailed, cause)
+			// TODO: 增加源服务器错误码26代替此处xemun.ECodeProxyFailed错误码, 兼容原网关
+			e := xerror.NewRequestError(xemun.RetProxyError, xemun.ECodeOriginalServerError, cause)
 			e.Write(w)
 			logProxyError(outReq, e)
 			return
