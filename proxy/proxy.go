@@ -69,6 +69,11 @@ func NewDo(tr *http.Transport) (http.HandlerFunc, error) {
 
 		// outReq, _ := http.NewRequest("GET", "http://192.168.2.102:8708"+r.URL.String(), nil)
 
+		// uid := xwayCtx.UserId
+		// if uid == "" {
+		// 	uid, _, _ = r.BasicAuth()
+		// }
+
 		// TODO: 优化并精简错误处理代码logProxyError
 		resp, err := client.Do(outReq)
 		if err != nil {

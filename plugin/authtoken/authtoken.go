@@ -237,6 +237,7 @@ func (at *AuthToken) accessToken(rw http.ResponseWriter, r *http.Request, next h
 		return
 	}
 	r.SetBasicAuth(m["userId"], "123456")
+	xwayCtx.UserId = m["userId"]
 	next(rw, r)
 }
 
