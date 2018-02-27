@@ -78,6 +78,6 @@ ab -n 10000000 -c 250 -k -H "Host: xxx" -H "sign: 8b34940d6b7433f323186a1585ddc2
 ./app -apiInterface 0.0.0.0 --etcd=xxx:2379 --dbHost=xxx:3306 --dbUserName=xxx --dbPassword=xxx --redisHost=xxx:6379 --redisPassword=xxx --redisDB=2 --apiInterface=0.0.0.0 --dbMaxIdle=2000 --dbMaxOpen=2000 --redisMaxIdle=2000 --redisMaxActive=2000 --redisWait --proxyMaxIdleConnsPerHost=1500 --dbConnMaxLifetime=60s --kafkaAK=xxx --kafkaPassword=xxx --kafkaConfigPath=mq.json --enablemq --logSeverity=info --log=kafka --topic=xway
 ```
 
-- 重载路由表 /v2/router/restore
-- 重载app列表 /v2/apps/restore
-- 统计状态 /v2/stats
+- 重载路由表 :9788/v2/router/restore
+- 重载app列表 :9788/v2/apps/restore
+- 统计状态 :9788/v2/stats
