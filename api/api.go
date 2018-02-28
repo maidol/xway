@@ -32,6 +32,7 @@ func InitProxyController(ng en.Engine, stats en.StatsProvider, router *mux.Route
 	router.HandleFunc("/v2/router/restore", handlerWithBody(c.restoreRouter)).Methods("GET")
 	router.HandleFunc("/v2/db/reset", handlerWithBody(c.resetDB)).Methods("GET")
 	router.HandleFunc("/v2/apps/restore", handlerWithBody(c.restoreApps)).Methods("GET")
+	router.HandleFunc("/v2/getfrontends", handlerWithBody(c.getFrontends)).Methods("GET")
 }
 
 func (pc *ProxyController) handleError(w http.ResponseWriter, r *http.Request) {
@@ -60,6 +61,11 @@ func (pc *ProxyController) getStats(w http.ResponseWriter, r *http.Request, para
 	gcount := runtime.NumGoroutine()
 	stats := map[string]interface{}{"gcount": gcount, "serviceOptions": registry.GetSvcOptions(), "db": db, "redis": rds, "proxy": proxy}
 	return stats, nil
+}
+
+func (pc *ProxyController) getFrontends(w http.ResponseWriter, r *http.Request, params map[string]string, body []byte) (interface{}, error) {
+	router := pc.ng.GetRegistry().GetRouter()
+	return router.GetFrontends(), nil
 }
 
 type routeData struct {
