@@ -104,31 +104,6 @@ func New(opt interface{}) negroni.Handler {
 	}
 }
 
-// // 验证clientId的存在和有效性
-// // TODO: (计划优化)
-// // 查询clientInfo(目前from mysql)
-// func clientAuth(clientId string, registry *plugin.Registry) (*appClient, error) {
-// 	db := registry.GetDBPool()
-// 	ac := &appClient{}
-// 	row := db.QueryRow("select clientId, privateKey, status from apps where clientId=?", clientId)
-// 	// ctx, cl := context.WithTimeout(context.Background(), 30*time.Second)
-// 	// defer cl()
-// 	// row := db.QueryRowContext(ctx, "select clientId, privateKey, status from apps where clientId=?", clientId)
-// 	if err := row.Scan(&ac.ClientId, &ac.PrivateKey, &ac.Status); err != nil {
-// 		if err == sql.ErrNoRows {
-// 			e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeClientException, err.Error())
-// 			return nil, e
-// 		}
-// 		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeInternal, "row.Scan err: "+err.Error())
-// 		return nil, e
-// 	}
-// 	if ac.Status != 0 {
-// 		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeClientException, "client.status!=0")
-// 		return ac, e
-// 	}
-// 	return ac, nil
-// }
-
 // 验证clientId的存在和有效性
 // 查询clientInfo(redis)
 func clientAuth(clientId string, registry *plugin.Registry) (*appClient, error) {

@@ -5,6 +5,7 @@ import (
 	"crypto/x509"
 	"fmt"
 	"io/ioutil"
+	"time"
 
 	"github.com/Shopify/sarama"
 )
@@ -39,7 +40,7 @@ func newConfig(cfg *MqConfig) *sarama.Config {
 	mqConfig.Net.SASL.User = cfg.Ak
 	mqConfig.Net.SASL.Password = cfg.Password
 	mqConfig.Net.SASL.Handshake = true
-	// mqConfig.Net.KeepAlive = 10 * time.Second // tcp KeepAlive 是否开启tcp连接心跳检测; tcp KeepAlive与http KeepAlive是两回事
+	mqConfig.Net.KeepAlive = 60 * time.Second // tcp KeepAlive 是否开启tcp连接心跳检测, 主动发送心跳包; tcp KeepAlive与http KeepAlive是两回事
 
 	// TODO: 优化发送策略, 提高吞吐量, 批量发送, mqConfig.Producer.Flush
 	// mqConfig.Producer.Flush.Messages = 10
