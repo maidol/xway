@@ -43,7 +43,7 @@ GOMAXPROCS=16 ./app -etcd xxx:2379 -dbHost xxx:3306 -dbUserName xxx -dbPassword 
 ### 添加测试数据
 
 ```powershell
-etcdctl put /vulcand/backends/b1/backend '{\"Type\":\"http\",\"Settings\":{\"KeepAlive\":{\"MaxIdleConnsPerHost\":200,\"Period\":\"4s\"}}}'
+etcdctl put /xway/backends/b1/backend '{\"Type\":\"http\",\"Settings\":{\"KeepAlive\":{\"MaxIdleConnsPerHost\":200,\"Period\":\"4s\"}}}'
 
 etcdctl put /xway/frontends/f1/frontend '{\"routeId\":\"f1\",\"domainHost\":\"eapi.jiaofucloud.cn\",\"routeUrl\":\"/v5/user/\",\"redirectHost\":\"192.168.2.162:3038\",\"forwardUrl\":\"/user/\",\"type\":\"http\",\"config\":{\"auth\":[\"oauth\"],\"operation\":[{\"rate\":\"0\"}]}}'
 
