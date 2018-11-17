@@ -13,6 +13,9 @@ type Router interface {
 	// Add/update a route
 	Handle(interface{}) error
 
+	// GetFrontends
+	GetFrontends() interface{}
+
 	// Validates whether this is an acceptable route expression
 	IsValid(string) bool
 

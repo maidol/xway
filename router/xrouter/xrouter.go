@@ -114,6 +114,10 @@ func (rt *Router) Handle(f interface{}) error {
 	return nil
 }
 
+func (rt *Router) GetFrontends() interface{} {
+	return rt.frontends
+}
+
 // frontendSlice 排序
 type frontendSlice []en.Frontend
 

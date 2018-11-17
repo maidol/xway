@@ -5,6 +5,7 @@ import (
 	"crypto/x509"
 	"fmt"
 	"io/ioutil"
+	"time"
 
 	"github.com/Shopify/sarama"
 )
@@ -33,10 +34,16 @@ func NewProducer(cfg *MqConfig) *MqProducer {
 func newConfig(cfg *MqConfig) *sarama.Config {
 	mqConfig := sarama.NewConfig()
 	mqConfig.ChannelBufferSize = 1024
+	// TODO: 优化net配置
+	mqConfig.Net.MaxOpenRequests = 10
 	mqConfig.Net.SASL.Enable = true
 	mqConfig.Net.SASL.User = cfg.Ak
 	mqConfig.Net.SASL.Password = cfg.Password
 	mqConfig.Net.SASL.Handshake = true
+	mqConfig.Net.KeepAlive = 60 * time.Second // tcp KeepAlive 是否开启tcp连接心跳检测, 主动发送心跳包; tcp KeepAlive与http KeepAlive是两回事
+
+	// TODO: 优化发送策略, 提高吞吐量, 批量发送, mqConfig.Producer.Flush
+	// mqConfig.Producer.Flush.Messages = 10
 
 	certBytes, err := ioutil.ReadFile(GetFullPath(cfg.CertFile))
 	if err != nil {
@@ -99,6 +106,7 @@ func newAsyncProducer(cfg *MqConfig) sarama.AsyncProducer {
 			// 	msg := fmt.Sprintf("Kafka async producer send msg success. topic: %v. key: %v. content: %v.", smsg.Topic, smsg.Key, smsg.Value)
 			// 	fmt.Println(msg)
 			case emsg := <-producer.Errors():
+				// TODO: 处理发送失败(写入文件或重发)
 				msg := fmt.Sprintf("Kafka async producer send message error. err: %v. topic: %v. key: %v. content: %v", emsg.Error(), emsg.Msg.Topic, emsg.Msg.Key, emsg.Msg.Value)
 				fmt.Println(msg)
 			}

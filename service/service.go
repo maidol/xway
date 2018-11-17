@@ -28,6 +28,7 @@ import (
 	"xway/utils/mq"
 	"xway/utils/mysql"
 	"xway/utils/redis"
+	"xway/utils/xconn"
 	"xway/utils/xlog/kafka"
 	"xway/utils/xlog/redis"
 )
@@ -113,10 +114,13 @@ func (s *Service) initLogger() {
 		logrus.SetFormatter(&logrus.TextFormatter{DisableColors: true, DisableSorting: true, DisableTimestamp: true})
 		fm := logrus_logstash.DefaultFormatter(logrus.Fields{"type": "gateway", "hostname": hostname, "logproject": "epaper", "logstore": "gateway"})
 		// TODO: 建议: 考虑并发写conn的情况(conn.Write是阻塞的)
+		// 处理网络断开重连
 		// 连接的使用优化成连接池+goroutine池并且以队列方式异步处理(队列中, 多个goroutine处理多个连接)
-		var conn net.Conn
+		// var conn net.Conn
 		// conn, err = net.Dial("udp", "192.168.2.155:64100")
-		conn, err = net.Dial("tcp", "192.168.2.155:64756")
+		var conn *xconn.Tcp
+		conn, err = xconn.NewTcp("192.168.2.155:64756")
+
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -318,7 +322,7 @@ func (s *Service) initProxy() error {
 		// Proxy: http.ProxyFromEnvironment,
 		DialContext: (&net.Dialer{
 			Timeout:   30 * time.Second,
-			KeepAlive: s.options.ProxyConnKeepAlive,
+			KeepAlive: s.options.ProxyConnKeepAlive, // tcp keepalive
 			DualStack: true,
 		}).DialContext,
 		// ResponseHeaderTimeout: 60 * time.Second,
@@ -326,7 +330,7 @@ func (s *Service) initProxy() error {
 		ExpectContinueTimeout: 1 * time.Second,
 		MaxIdleConns:          s.options.ProxyMaxIdleConns, // Zero means no limit.
 		MaxIdleConnsPerHost:   s.options.ProxyMaxIdleConnsPerHost,
-		IdleConnTimeout:       s.options.ProxyIdleConnTimeout,
+		IdleConnTimeout:       s.options.ProxyIdleConnTimeout, // http keepalive
 	}
 	s.registry.SetTransport(tr)
 	p, err := proxy.NewDo(tr)

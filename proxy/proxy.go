@@ -69,6 +69,11 @@ func NewDo(tr *http.Transport) (http.HandlerFunc, error) {
 
 		// outReq, _ := http.NewRequest("GET", "http://192.168.2.102:8708"+r.URL.String(), nil)
 
+		// uid := xwayCtx.UserId
+		// if uid == "" {
+		// 	uid, _, _ = r.BasicAuth()
+		// }
+
 		// TODO: 优化并精简错误处理代码logProxyError
 		resp, err := client.Do(outReq)
 		if err != nil {
@@ -131,7 +136,8 @@ func NewDo(tr *http.Transport) (http.HandlerFunc, error) {
 			// 处理4xx, 5xx ...
 			msg := fmt.Sprintf("源服务器错误,[状态码]:%v, body:%s", statusCode, body)
 			cause := formatRequestCause(u, msg)
-			e := xerror.NewRequestError(xemun.RetProxyError, xemun.ECodeProxyFailed, cause)
+			// TODO: 增加源服务器错误码26代替此处xemun.ECodeProxyFailed错误码, 兼容原网关
+			e := xerror.NewRequestError(xemun.RetProxyError, xemun.ECodeOriginalServerError, cause)
 			e.Write(w)
 			logProxyError(outReq, e)
 			return

@@ -33,7 +33,7 @@ docker run --rm -v "$PWD":/go/src/xway -e CGO_ENABLED=0 -e GOOS=linux -w /go/src
 ```bash
 GOMAXPROCS=2 app -etcd xxx:2379 -dbHost xxx:3306 -dbUserName xxx -dbPassword xxx -redisHost xxx:6379 -redisPassword xxx -logSeverity info -log redis
 
-GOMAXPROCS=16 ./app -etcd xxx:2379 -dbHost xxx:3306 -dbUserName xxx -dbPassword xxx -redisHost xxx:6379 -redisPassword xxx -apiInterface 0.0.0.0 -dbMaxIdle 2000 -dbMaxOpen 2000 -redisMaxIdle 2000 -redisMaxActive 2000 --redisWait=true -proxyMaxIdleConnsPerHost 1500 -dbConnMaxLifetime 60s -kafkaAK xxx -kafkaPassword xxx -kafkaConfigPath mq.test.json -enablemq -logSeverity info -log kafka -topic testxway
+GOMAXPROCS=16 ./app -apiInterface 0.0.0.0 -etcd xxx:2379 -dbHost xxx:3306 -dbUserName xxx -dbPassword xxx -redisHost xxx:6379 -redisPassword xxx -redisDB 0 -apiInterface 0.0.0.0 -dbMaxIdle 2000 -dbMaxOpen 2000 -redisMaxIdle 2000 -redisMaxActive 2000 --redisWait -proxyMaxIdleConnsPerHost 1500 -dbConnMaxLifetime 60s -kafkaAK xxx -kafkaPassword xxx -kafkaConfigPath mq.test.json -enablemq -logSeverity info -log kafka -topic testxway
 ```
 
 ## etcdctl
@@ -43,6 +43,7 @@ GOMAXPROCS=16 ./app -etcd xxx:2379 -dbHost xxx:3306 -dbUserName xxx -dbPassword 
 ### 添加测试数据
 
 ```powershell
+
 etcdctl put /xway/backends/b1/backend '{\"Type\":\"http\",\"Settings\":{\"KeepAlive\":{\"MaxIdleConnsPerHost\":200,\"Period\":\"4s\"}}}'
 
 etcdctl put /xway/frontends/f1/frontend '{\"routeId\":\"f1\",\"domainHost\":\"eapi.jiaofucloud.cn\",\"routeUrl\":\"/v5/user/\",\"redirectHost\":\"192.168.2.162:3038\",\"forwardUrl\":\"/user/\",\"type\":\"http\",\"config\":{\"auth\":[\"oauth\"],\"operation\":[{\"rate\":\"0\"}]}}'
@@ -63,3 +64,71 @@ wrk -t16 -c2000 -d9000s -T30s --latency -H "Host: xxx" -H "sign: 8b34940d6b7433f
 
 ab -n 10000000 -c 250 -k -H "Host: xxx" -H "sign: 8b34940d6b7433f323186a1585ddc2cfc3381d53" -H "timeline: 1515753182" -H "clientid: 20000" -H "timeline: 1515657796" "http://192.168.2.101:9799/gateway/nomux/hello?clientId=20000&accessToken=45860b9b69d04838b4e04eca68dbf1fd4de4a626"
 ```
+
+## 部署
+
+----
+
+- 启动
+
+```bash
+
+# 查看命令参数
+./app -h
+
+# 测试
+./app \
+-apiInterface 0.0.0.0 \
+--etcd=xxx:2379 \
+--dbHost=xxx:3306 \
+--dbUserName=xxx \
+--dbPassword=xxx \
+--redisHost=xxx:6379 \
+--redisPassword=xxx \
+--redisDB=0 \
+--apiInterface=0.0.0.0 \
+--dbMaxIdle=2000 \
+--dbMaxOpen=2000 \
+--redisMaxIdle=2000 \
+--redisMaxActive=2000 \
+--redisWait \
+--proxyMaxIdleConnsPerHost=1500 \
+--dbConnMaxLifetime=60s \
+--kafkaAK=xxx \
+--kafkaPassword=xxx \
+--kafkaConfigPath=mq.test.json \
+--enablemq \
+--logSeverity=info \
+--log=lodash \
+--topic=testxway
+
+# 预发布
+./app \
+-apiInterface 0.0.0.0 \
+--etcd=xxx:2379 \
+--dbHost=xxx:3306 \
+--dbUserName=xxx \
+--dbPassword=xxx \
+--redisHost=xxx:6379 \
+--redisPassword=xxx \
+--redisDB=2 \
+--apiInterface=0.0.0.0 \
+--dbMaxIdle=2000 \
+--dbMaxOpen=2000 \
+--redisMaxIdle=2000 \
+--redisMaxActive=2000 \
+--redisWait \
+--proxyMaxIdleConnsPerHost=1500 \
+--dbConnMaxLifetime=60s \
+--kafkaAK=xxx \
+--kafkaPassword=xxx \
+--kafkaConfigPath=mq.json \
+--enablemq \
+--logSeverity=info \
+--log=kafka \
+--topic=xway
+```
+
+- 重载路由表 :9788/v2/router/restore
+- 重载app列表 :9788/v2/apps/restore
+- 统计状态 :9788/v2/stats

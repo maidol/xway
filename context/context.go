@@ -13,6 +13,7 @@ type XWayContext struct {
 	// originalRequest *http.Request
 	Map       map[interface{}]interface{}
 	Registry  *plugin.Registry
+	UserId    string
 	UserName  string
 	Password  string
 	RequestId string

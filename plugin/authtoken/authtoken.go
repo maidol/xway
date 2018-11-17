@@ -104,31 +104,6 @@ func New(opt interface{}) negroni.Handler {
 	}
 }
 
-// // 验证clientId的存在和有效性
-// // TODO: (计划优化)
-// // 查询clientInfo(目前from mysql)
-// func clientAuth(clientId string, registry *plugin.Registry) (*appClient, error) {
-// 	db := registry.GetDBPool()
-// 	ac := &appClient{}
-// 	row := db.QueryRow("select clientId, privateKey, status from apps where clientId=?", clientId)
-// 	// ctx, cl := context.WithTimeout(context.Background(), 30*time.Second)
-// 	// defer cl()
-// 	// row := db.QueryRowContext(ctx, "select clientId, privateKey, status from apps where clientId=?", clientId)
-// 	if err := row.Scan(&ac.ClientId, &ac.PrivateKey, &ac.Status); err != nil {
-// 		if err == sql.ErrNoRows {
-// 			e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeClientException, err.Error())
-// 			return nil, e
-// 		}
-// 		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeInternal, "row.Scan err: "+err.Error())
-// 		return nil, e
-// 	}
-// 	if ac.Status != 0 {
-// 		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeClientException, "client.status!=0")
-// 		return ac, e
-// 	}
-// 	return ac, nil
-// }
-
 // 验证clientId的存在和有效性
 // 查询clientInfo(redis)
 func clientAuth(clientId string, registry *plugin.Registry) (*appClient, error) {
@@ -216,7 +191,7 @@ func (at *AuthToken) accessToken(rw http.ResponseWriter, r *http.Request, next h
 	}
 	// 验证token
 	if m == nil || len(m) == 0 {
-		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeUnauthorized, "未找到有效token")
+		e := xerror.NewRequestError(enum.RetOauthError, enum.ECodeUnauthorized, "未找到有效token")
 		at.RequestError(rw, r, e)
 		return
 	}
@@ -232,11 +207,12 @@ func (at *AuthToken) accessToken(rw http.ResponseWriter, r *http.Request, next h
 		return
 	}
 	if int64(expireDate) < time.Now().Unix() {
-		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeUnauthorized, "token已过期")
+		e := xerror.NewRequestError(enum.RetOauthError, enum.ECodeAccessTokenTimeOut, "token已过期")
 		at.RequestError(rw, r, e)
 		return
 	}
 	r.SetBasicAuth(m["userId"], "123456")
+	xwayCtx.UserId = m["userId"]
 	next(rw, r)
 }
 
@@ -266,7 +242,7 @@ func (at *AuthToken) clientCredentials(rw http.ResponseWriter, r *http.Request, 
 	// TODO: 比较签名, clientId, timeLine, sign, path, query
 	text := generateOriginalText4Sign(hd, r)
 	if s, b := checkHamcSign(text, hd.Sign, app.PrivateKey); !b {
-		e := xerror.NewRequestError(enum.RetAbnormal, enum.ECodeHmacsha1SignError, "sign签名不匹配: "+hd.Sign+", 正确签名: "+s+", 原始值: "+text)
+		e := xerror.NewRequestError(enum.RetOauthError, enum.ECodeHmacsha1SignError, "sign签名不匹配: "+hd.Sign+", 正确签名: "+s+", 原始值: "+text)
 		at.RequestError(rw, r, e)
 		return
 	}
