@@ -31,6 +31,7 @@ import (
 	"xway/utils/xconn"
 	"xway/utils/xlog/kafka"
 	"xway/utils/xlog/redis"
+	// "xway/utils/xlog/caller"
 )
 
 const (
@@ -87,6 +88,10 @@ func NewService(options Options, registry *plugin.Registry) *Service {
 func (s *Service) initLogger() {
 	logrus.SetLevel(s.options.LogSeverity.S)
 
+	// callerhook := caller.NewContextHook(logrus.AllLevels...)
+	// logrus.AddHook(callerhook)
+	logrus.SetReportCaller(true)
+
 	if s.options.LogFormatter != nil {
 		logrus.SetOutput(os.Stdout)
 		logrus.SetFormatter(s.options.LogFormatter)
@@ -94,7 +99,7 @@ func (s *Service) initLogger() {
 	}
 	if s.options.Log == "console" {
 		logrus.SetOutput(os.Stdout)
-		logrus.SetFormatter(&logrus.TextFormatter{FullTimestamp: true})
+		logrus.SetFormatter(&logrus.TextFormatter{FullTimestamp: true, ForceColors: true})
 		return
 	}
 	if s.options.Log == "json" {
